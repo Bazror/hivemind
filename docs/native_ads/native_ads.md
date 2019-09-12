@@ -1,4 +1,4 @@
-# Native Ads (Alpha)
+# Native Ads (Pre-Alpha)
 
 *Design specifications for Native Ads feature in communities (WIP)*
 
