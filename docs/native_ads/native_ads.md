@@ -60,4 +60,4 @@ Interactive polls give community members a chance to share their opinions on a c
 
 ## Links to supporting documentation
 
-- [Development Scope]()
+- [Development Scope](https://github.com/imwatsi/hivemind/blob/master/docs/native_ads/dev_scope.md)
