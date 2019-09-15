@@ -82,7 +82,7 @@ The ad has been rejected by a moderator.
 
 Once an ad is approved by moderators, valid payments can be made by burning tokens **no less** than the bid amount.
 
-Even though approved, an ad will not be displayed until the payment is made. Ads are automatically enabled after successful payment. If it's a scheduled ad, it will be automatically enabled, provided the payment is made in time, as expanded on below.
+Even though approved, an ad will not be displayed until the payment is made. Unscheduled ads are manually enabled by a moderator, after a successful and valid payment. Scheduled ads are automatically enabled if the payment is made in time, as expanded on below.
 
 ### Scheduled Ads
 
