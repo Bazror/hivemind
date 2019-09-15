@@ -4,17 +4,28 @@
 
 *The structure of data that should be posted on the blockchain to make valid ad entries, ad review operations and change a community's ad related settings.*
 
-### Define post structures and metadata
+### Post structures and metadata
 
 ...
 
-### Update current community settings to include ad settings
+### Community settings
 
 ...
 
-### Define custom JSON operations
+### Custom JSON operations
 
-...
+The following custom JSON operations will need to be implemented.
+
+**Moderators**
+
+- `ad_approve`
+- `ad_revise`
+- `ad_enable`
+- `ad_reject`
+
+**Members**
+
+- `ad_submit`
 
 ## DB
 
