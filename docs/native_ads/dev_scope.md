@@ -14,7 +14,7 @@
 
 ### Custom JSON operations
 
-The following custom JSON operations will need to be implemented.
+The following `custom_json` operations will need to be implemented.
 
 **Moderators**
 
