@@ -80,7 +80,9 @@ The ad has been rejected by a moderator.
 
 ### Ad Payments
 
-Once an ad is approved by moderators, valid payments can be made by burning tokens **no less** than the bid amount.
+Communities will have the choice to either collect all ad revenue or have it burnt. A setting will be availed in `community settings`.
+
+Once an ad is approved by moderators, valid payments can be made by sending tokens to a community account, or burning tokens, that are **no less** than the bid amount.
 
 Even though approved, an ad will not be displayed until the payment is made. Unscheduled ads are manually enabled by a moderator, after a successful and valid payment. Scheduled ads are automatically enabled if the payment is made in time, as expanded on below.
 
