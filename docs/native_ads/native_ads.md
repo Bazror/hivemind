@@ -38,7 +38,7 @@ By making all ads decline payout and enforcing this rule in hivemind itself, we 
 
 ### Ad creation
 
-Ads are created by making posts in a community. Posts will contain metadata that holds the ad's properties.
+Ads are created by making posts in a community. Posts will contain metadata that holds the ad's properties, duration (total time units), starting bid and an optional start time.
 
 ### Bidding process
 
@@ -48,7 +48,6 @@ A bid operation will contain metadata with:
 
 - The post for the ad
 - Transactional data (increase or decrease bid amount, token)
-- Time units (in minutes)
 
 ### Ad review
 
@@ -58,15 +57,11 @@ Ads are reviewed by moderators based on bid amount and date. The highest bids fo
 
 This is the default status for newly created ads.
 
-**Revision**
-
-A moderator can ask for modifications before approval.
-
 **Approved**
 
 The ad is approved and payment can be made.
 
-**Enabled**
+**Ready**
 
 Payment has been made and the ad is ready to show.
 
@@ -76,13 +71,14 @@ The ad is currently showing.
 
 **Rejected**
 
-The ad has been rejected by a moderator.
+The ad has been rejected by a moderator. Notes will be left explaining the reason why. A moderator can also ask for modifications before approval.
+
 
 ### Ad Payments
 
 Communities will have the choice to either collect all ad revenue or have it burnt. A setting will be availed in `community settings`.
 
-Once an ad is approved by moderators, valid payments can be made by sending tokens to a community account, or burning tokens, that are **no less** than the bid amount.
+Once an ad is approved by moderators, valid payments can be made by sending tokens to a community account or burning tokens that are **no less** than the bid amount.
 
 Even though approved, an ad will not be displayed until the payment is made. Unscheduled ads are manually enabled by a moderator, after a successful and valid payment. Scheduled ads are automatically enabled if the payment is made in time, as expanded on below.
 
@@ -105,7 +101,7 @@ Ads with late payments can be renegotiated for use at a later time as scheduled 
 
 ### Ad Types
 
-The flexibility of JSON-based data makes it easy to develop a wide array of ad types to suit different community types. More ad types will be developed as the project progresses.
+The flexibility of JSON-based data makes it easy to develop a wide array of ad types to suit different community types. More ad types will be developed as the project progresses. Read the **Ad Types** document (linked below) for more details on each ad type.
 
 #### Native post
 
@@ -121,3 +117,5 @@ Interactive polls give community members a chance to share their opinions on a c
 ## Links to supporting documentation
 
 - [Development Scope](https://github.com/imwatsi/hivemind/blob/master/docs/native_ads/dev_scope.md)
+
+- [Ad Types](https://github.com/imwatsi/hivemind/blob/master/docs/native_ads/ad_types.md)
