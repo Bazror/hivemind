@@ -1,6 +1,6 @@
 # Ad Types (WIP)
 
-*Various types of ads and suggested data structures. This will be ported to an appropriate Native Ads section, on a future **hivemind documentation** website.*
+*Various types of ads and suggested data structures. These will be ported to an appropriate Native Ads section, on a future **hivemind documentation** website.*
 
 ---
 
@@ -20,7 +20,8 @@
 
 Types of devices to show ad on.
 
-**Key**: `devices`:
+**Key**: `devices`
+
 **Values**: *mobile, desktop, all*
 
 
