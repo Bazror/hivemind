@@ -6,11 +6,31 @@
 
 ### Post structures and metadata
 
-...
+Properties for ads will be in the `native_ad` key in a post's JSON metadata.
+
+**Metadata**
+
+- `type`
+- `properties`
+
+**Post settings**
+
+- decline payout
+- hidden (under investigation, possible universally supported key:value)
+
 
 ### Community settings
 
-...
+Adding an extra `native_ads` key in community settings to hold the following settings (JSON dictionary, preferably):
+
+- `enabled`
+- `token`
+- `min_bid`
+- `max_time_bid`
+- `max_time_active`
+- `scheduled_ads_delay`
+- `scheduled_ads_timeout`
+
 
 ### Custom JSON operations
 
@@ -19,22 +39,16 @@ The following `custom_json` operations will need to be implemented.
 **Moderators**
 
 - `ad_approve`
-- `ad_revise`
-- `ad_enable`
+- `ad_allocate`
 - `ad_reject`
 
-**Members**
+**Users**
 
 - `ad_submit`
+- `ad_bid`
 
-## DB
+## DB level
 
 *Changes made to the database to accommodate ads.*
-
-...
-
-## Permissions and actions
-
-*New permissions to be added and actions that address ad purchase and ad review/moderation.*
 
 ...
