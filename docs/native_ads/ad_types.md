@@ -28,6 +28,14 @@ Types of devices to show ad on.
 ## Example JSON Entry
 
 ```
-...
+{
+    "community": "",
+    "native_ad": {
+        "ad_type": "native_post",
+        "ad_properties": {
+            "devices": "mobile",
+        }
+    }
+}
 
 ```

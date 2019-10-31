@@ -1,10 +1,10 @@
 # Native Ads (Pre-Alpha)
 
-*Design overview for Native Ads feature in communities (WIP)*
+*Design overview for Native Ads feature in Hivemind Communities (WIP)*
 
 ---
 
-To aid communities in shaping their attention economies, a feature to manage different types of ad spaces within a community is proposed. This will augment the built-in "promoted" posts feature, giving developers more options to monetize communities on the Steem blockchain.
+To aid communities in shaping their attention economies, a feature to manage different types of ad spaces within a community is proposed. This will augment the built-in "promoted" posts feature, giving communities on the Steem blockchain more options to monetize.
 
 By putting ad characteristics, purchases and moderation outcomes on the blockchain, we create a transparent, verifiable and auditable environment. Hivemind will synchronize all the ad related activity and present an easy to use interface for developers to work with, the same as it does with social interactions.
 

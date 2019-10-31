@@ -23,13 +23,14 @@ Properties for ads will be in the `native_ad` key in a post's JSON metadata.
 
 Adding an extra `native_ads` key in community settings to hold the following settings (JSON dictionary, preferably):
 
-- `enabled`
-- `token`
-- `min_bid`
-- `max_time_bid`
-- `max_time_active`
-- `scheduled_ads_delay`
-- `scheduled_ads_timeout`
+- `enabled` (boolean)
+- `token` (token symbol)
+- `burn` (boolean)
+- `min_bid` (float)
+- `max_time_bid` (integer)
+- `max_time_active` (integer)
+- `scheduled_ads_delay` (integer)
+- `scheduled_ads_timeout` (integer)
 
 
 ### Custom JSON operations
