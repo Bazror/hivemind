@@ -1,4 +1,4 @@
-# Native Ads (Pre-Alpha)
+# Native Ads [Pre-Alpha]
 
 *Design overview for Native Ads feature in Hivemind Communities (WIP)*
 
@@ -12,7 +12,8 @@ By putting ad characteristics, purchases and moderation outcomes on the blockcha
 
 - Promoted posts (legacy) will be optional, as will be the new native ad system
 - Communities can still feature posts, by pinning them for example. This feature is not affected.
-- Ads will use new metadata attributes and associated `custom-json` actions
+- Native ads will have dedicated visibility in a community that opts in to this feature
+- To arrive at verifiable state, ads will use new metadata attributes and associated `custom-json` actions
 
 ## Ad System Design Principles
 
@@ -28,7 +29,7 @@ The net effect of selling "ad space" should be positive for the STEEM economy, m
 
 ### No direct impact/influence on community rewards
 
-By making all ads decline payout and enforcing this rule in hivemind itself, we strengthen the economic benefits derived from transactional net-effect mentioned above.
+By making all ads decline payout and enforcing this rule in Hivemind itself, we strengthen the economic benefits derived from the transactional net-effect mentioned above.
 
 ---
 
@@ -46,7 +47,7 @@ Bids are placed by the creator's account through custom JSON operations.
 
 A bid operation will contain metadata with:
 
-- The post for the ad
+- The post ID for the ad
 - Transactional data (increase or decrease bid amount, token)
 
 ### Ad review
@@ -78,7 +79,7 @@ The ad has been rejected by a moderator. Notes will be left explaining the reaso
 
 Communities will have the choice to either collect all ad revenue or have it burnt. A setting will be availed in `community settings`.
 
-Once an ad is approved by moderators, valid payments can be made by sending tokens to a community account or burning tokens that are **no less** than the bid amount.
+Once an ad is approved by moderators, valid payments can be made by sending tokens to a community account, or burning tokens, that are **no less** than the bid amount.
 
 Even though approved, an ad will not be displayed until the payment is made. Unscheduled ads are manually enabled by a moderator, after a successful and valid payment. Scheduled ads are automatically enabled if the payment is made in time, as expanded on below.
 
@@ -90,13 +91,13 @@ When no date/time is selected, the ad is an "unscheduled" ad;  a moderator will 
 
 Ads can be scheduled to run at preselected times by specifying start and end times.
 
-Community managers/owners will also be able to set the earliest time from the present that scheduled ads can be placed. Some communities may have shorter response times and some longer, so this gives them the opportunity to factor in time for review, reducing the probability of "timed-out" ad reviews.
+Community managers/owners will also be able to set the earliest time from the present that scheduled ads can be placed. Some communities may have shorter response times and some longer, so this gives them the opportunity to factor in time for review, reducing the probability of "timed-out" ad reviews for time-sensitive scheduled ads.
 
-*For example, if a community sets a window period of 48 hours, it means scheduled ads can only be placed starting 48 hours from the current hour. This gives the review and payment process about 48 hours.*
+*For example, if a community sets a window period of 48 hours, it means scheduled ads can only be for time starting 48 hours from the current hour. This gives the review and payment process about 48 hours.*
 
 Payments for scheduled ads should be made before the time they're set to start showing. Otherwise, the ad will not be shown, the time slot will be freed up for other people to use and a moderator may ask for a revision.
 
-Ads with late payments can be renegotiated for use at a later time as scheduled or unscheduled ads.
+The involvement of moderators will enable ads with late payments to be renegotiated for use at a later time as scheduled or unscheduled.
 
 
 ### Ad Types
@@ -109,7 +110,9 @@ A native post is structured just like an ordinary post in a community. The diffe
 
 #### Interactive polls
 
-Interactive polls give community members a chance to share their opinions on a certain topic/question as well as see what other community members think. These will differ from the normal polls that members can make in that they will be displayed on sections set aside for such polls, will be marked "sponsored" and will decline payout.
+Interactive polls give community members a chance to share their opinions on a certain topic/question as well as see what other community members think. Hivemind can be extended to handle interactive polls and when these are implemented, an ad type with the same properties will also become possible.
+
+These will differ from the normal polls that members can make in that they will be displayed on sections set aside for such polls, will be marked "sponsored" and will decline payout.
 
 
 ---
