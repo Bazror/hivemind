@@ -560,7 +560,7 @@ class CachedPost:
             sql = cls._update(values)
         # return ad SQL only if present
         if ad_sql is not None:
-            _final = [sql] + tag_sqls + ad_sql
+            _final = [sql] + tag_sqls + [ad_sql]
         else:
             _final = [sql] + tag_sqls
 
