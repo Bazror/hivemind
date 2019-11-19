@@ -12,6 +12,7 @@ from hive.utils.post import post_basic, post_legacy, post_payout, post_stats, me
 from hive.utils.timer import Timer
 from hive.indexer.accounts import Accounts
 from hive.indexer.notify import Notify
+from hive.indexer.native_ad import NativeAd
 
 # pylint: disable=too-many-lines
 
@@ -552,9 +553,18 @@ class CachedPost:
         # build the post insert/update SQL, add tag SQLs
         if level == 'insert':
             sql = cls._insert(values)
+            # update native ads
+            nat_ad = NativeAd()
+            ad_sql = nat_ad.process_ad(values)
         else:
             sql = cls._update(values)
-        return [sql] + tag_sqls
+        # return ad SQL only if present
+        if ad_sql is not None:
+            _final = [sql] + tag_sqls + ad_sql
+        else:
+            _final = [sql] + tag_sqls
+
+        return _final
 
     @classmethod
     def _notifs(cls, post, pid, level, payout):
