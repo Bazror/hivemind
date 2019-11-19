@@ -309,6 +309,27 @@ def build_metadata_community(metadata=None):
 
     return metadata
 
+def build_metadata_ads(metadata):
+    """Build native ads schema def"""
+    sa.Table(
+        'hive_ads', metadata,
+        sa.Column('post_id', sa.Integer, primary_key=True),
+        sa.Column('community_id', sa.Integer, nullable=False),
+        sa.Column('type', VARCHAR(16), nullable=False),
+        sa.Column('properties', sa.Text, nullable=False),
+        sa.Column('time_units', sa.Integer, nullable=False),
+        sa.Column('start_time', sa.DateTime),  # optional, NULL means unscheduled (for API endpoint)
+        sa.Column('approved', BOOLEAN, nullable=False, server_default='0'),
+        sa.Column('last_reviewed', sa.DateTime),  # TODO: hook onto mod ops
+
+        # TODO: user_disabled field for user cancellations, useful??
+        #sa.Column('user_disabled', BOOLEAN, nullable=False, server_default='0'),
+
+        # TODO: constraints
+    )
+
+    return metadata
+
 
 def teardown(db):
     """Drop all tables"""

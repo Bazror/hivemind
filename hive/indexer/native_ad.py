@@ -24,7 +24,8 @@ class NativeAd:
                     ('post_id', entry['post_id']),
                     ('community_id', entry['community_id']),
                     ('type', ad_metadata['type']),
-                    ('properties', ad_metadata['properties'])
+                    ('properties', json.dumps(ad_metadata['properties'])),
+                    ('time_units', ad_metadata['time_units'])
                 ]
                 return cls._insert(post)
 
