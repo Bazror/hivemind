@@ -52,4 +52,6 @@ class NativeAd:
             ad_props = ad_metadata['properties']
             if isinstance(ad_props, dict):  # properties must be in a dict
                 return ad_metadata
+            # TODO: validate time_units (int)
+            # TODO: better return implementation
         return None
