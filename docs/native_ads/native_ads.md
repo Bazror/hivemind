@@ -42,20 +42,37 @@ Ads are created by making posts in a community. Posts will contain metadata that
 
 ### Bidding process
 
-Bids are placed by the creator's account through custom JSON operations.
+Bids are placed by the ad creator's account through custom JSON operations.
 
 A bid operation will contain metadata with:
 
 - The post for the ad
 - Transactional data (increase or decrease bid amount, token)
+- Duration data (time units) [optional]
+
+Building dedicated user interfaces for handling the bidding process will be possible. Appropriate data sets will be availed through the API. For example, an endpoint to retrieve bids sorted by community and price-per-time-unit enables developers to create realtime competitive bidding interfaces that show users their ads' positions against others bidding for the same community.
+
+### Ad status
+
+The ad lifecycle is designed as an ordered flow. Different possibilities exist at each stage, with checks and balances coded in Hivemind to enforce the workflow.
+
+**0 - Draft**: ad is newly created or was rejected [user]
+
+**1 - Submitted**: a user has submitted it for review [user]
+
+**2 - Approved**: ad has been approved by community moderator [mod]
+
+**3 - Funded**: user has paid the bid amount in full [user]
+
+**4 - Scheduled**: ad has been scheduled to run [mod / auto from payment]
 
 ### Ad review
 
-Ads are reviewed by moderators based on bid amount and date. The highest bids for the day will be at the top of the list. Below are the different states that an ad goes through.
+Ads are reviewed by moderators based on bid amount and date. The highest bids for the day will be at the top of the list. Below are the different states that front-ends will be able to access and display.
 
 **Awaiting review**
 
-This is the default status for newly created ads.
+This is the default status for ads submitted for review by their creators.
 
 **Approved**
 
@@ -63,7 +80,7 @@ The ad is approved and payment can be made.
 
 **Ready**
 
-Payment has been made and the ad is ready to show.
+Payment has been made and the ad is scheduled to show.
 
 **Live**
 
@@ -71,12 +88,12 @@ The ad is currently showing.
 
 **Rejected**
 
-The ad has been rejected by a moderator. Notes will be left explaining the reason why. A moderator can also ask for modifications before approval.
+The ad has been rejected by a moderator during the review process and is back in the Draft (0) state. Notes may be left by a moderator explaining the reason why or requesting modifications. A user can resubmit the ad for review after posting an edited version of the post on the blockchainn. Note that only ads that are in the pre-approval (0-1) states can register successful edits. All other edits are ignored.
 
 
 ### Ad Payments
 
-Communities will have the choice to either collect all ad revenue or have it burnt. A setting will be availed in `community settings`.
+Communities will have the choice to either collect all ad revenue or have it burnt. A setting will be availed in a community's `settings`.
 
 Once an ad is approved by moderators, valid payments can be made by sending tokens to a community account or burning tokens that are **no less** than the bid amount.
 
@@ -84,11 +101,11 @@ Even though approved, an ad will not be displayed until the payment is made. Uns
 
 ### Scheduled Ads
 
-To place an ad, it's mandatory to specify the amount of time you want it to be shown for. There is a `time_units` field that's required, and optional fields for start and end times.
+To place an ad, it's mandatory to specify the amount of time you want it to be shown for. There is a `time_units` field that's required, and an optional field for `start_time`.
 
-When no date/time is selected, the ad is an "unscheduled" ad;  a moderator will allocate it the earliest available time slot that fits its set duration completely.
+When no `start_time` is selected, the ad is an "unscheduled" ad;  a moderator will allocate it the earliest available time slot that fits its set duration completely. Front ends will have access to appropriate data sets and guidelines to implement this.
 
-Ads can be scheduled to run at preselected times by specifying start and end times.
+Ads can be scheduled to run at preselected times by specifying `start_time`.
 
 Community managers/owners will also be able to set the earliest time from the present that scheduled ads can be placed. Some communities may have shorter response times and some longer, so this gives them the opportunity to factor in time for review, reducing the probability of "timed-out" ad reviews.
 
@@ -98,6 +115,23 @@ Payments for scheduled ads should be made before the time they're set to start s
 
 Ads with late payments can be renegotiated for use at a later time as scheduled or unscheduled ads.
 
+### Universal rules for ads
+
+#### Decline payout
+
+For ads to be valid, they need to decline reward payouts, by setting:
+
+- `max_payout` to ZERO (0), or
+- `@null` account as 100% beneficiary (burning)
+
+#### Mandatory JSON metadata
+
+Native ads are valid when they contain a `native_ad` key in the post's JSON metadata field. Within the key, a dictionary of parameters will define the ad.
+
+- `type`: the type name of the ad, e.g. `native_post`
+- `properties`: contains the type-specific properties, e.g. `"devices": "mobile"`
+- `time_units`: the period of time the ad will run for (initial, can be updated through subsequent custom JSON ops)
+
 
 ### Ad Types
 
@@ -105,11 +139,13 @@ The flexibility of JSON-based data makes it easy to develop a wide array of ad t
 
 #### Native post
 
-A native post is structured just like an ordinary post in a community. The difference is that it is marked "sponsored" and it declines payout.
+A native post is structured just like an ordinary post in a community. The difference is that it is given a dedicated, high-visibility spot and marked "sponsored."
 
 #### Interactive polls
 
-Interactive polls give community members a chance to share their opinions on a certain topic/question as well as see what other community members think. These will differ from the normal polls that members can make in that they will be displayed on sections set aside for such polls, will be marked "sponsored" and will decline payout.
+Interactive polls give community members a chance to share their opinions on a certain topic/question as well as see what other community members think. Hivemind enables polls to be implemented in communities and once they are developed, they can be an ad type as well.
+
+They will differ from the normal polls that members can make in that they will be displayed on sections set aside for such polls, and will be marked "sponsored."
 
 
 ---
