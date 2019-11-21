@@ -319,10 +319,9 @@ def build_metadata_ads(metadata):
         sa.Column('properties', sa.Text, nullable=False),
         sa.Column('time_units', sa.Integer, nullable=False),
         sa.Column('start_time', sa.DateTime),  # optional, NULL means unscheduled (for API endpoint)
-        sa.Column('approved', BOOLEAN, nullable=False, server_default='0'),
-        sa.Column('last_reviewed', sa.DateTime),  # TODO: hook onto mod ops
-
-        # TODO: user_disabled field for user cancellations, useful??
+        sa.Column('status', SMALLINT, nullable=False, server_default='0'),
+        sa.Column('mod_notes', sa.String(500), server_default='')
+        # TODO: user_disabled field for user cancellation override, edge-case, useful??
         #sa.Column('user_disabled', BOOLEAN, nullable=False, server_default='0'),
 
         # TODO: constraints
