@@ -1,4 +1,4 @@
-# Native Ads (Pre-Alpha)
+# Native Ads [Pre-Alpha]
 
 *Design overview for Native Ads feature in Hivemind Communities (WIP)*
 
@@ -28,7 +28,7 @@ The net effect of selling "ad space" should be positive for the STEEM economy, m
 
 ### No direct impact/influence on community rewards
 
-By making all ads decline payout and enforcing this rule in hivemind itself, we strengthen the economic benefits derived from transactional net-effect mentioned above.
+By making all ads decline payout and enforcing this rule in Hivemind itself, we strengthen the economic benefits derived from the transactional net-effect mentioned above.
 
 ---
 
@@ -46,7 +46,7 @@ Bids are placed by the ad creator's account through custom JSON operations.
 
 A bid operation will contain metadata with:
 
-- The post for the ad
+- The post ID for the ad
 - Transactional data (increase or decrease bid amount, token)
 - Duration data (time units) [optional]
 
@@ -95,7 +95,7 @@ The ad has been rejected by a moderator during the review process and is back in
 
 Communities will have the choice to either collect all ad revenue or have it burnt. A setting will be availed in a community's `settings`.
 
-Once an ad is approved by moderators, valid payments can be made by sending tokens to a community account or burning tokens that are **no less** than the bid amount.
+Once an ad is approved by moderators, valid payments can be made by sending tokens to a community account, or burning tokens, that are **no less** than the bid amount.
 
 Even though approved, an ad will not be displayed until the payment is made. Unscheduled ads are manually enabled by a moderator, after a successful and valid payment. Scheduled ads are automatically enabled if the payment is made in time, as expanded on below.
 
@@ -107,13 +107,30 @@ When no `start_time` is selected, the ad is an "unscheduled" ad;  a moderator wi
 
 Ads can be scheduled to run at preselected times by specifying `start_time`.
 
-Community managers/owners will also be able to set the earliest time from the present that scheduled ads can be placed. Some communities may have shorter response times and some longer, so this gives them the opportunity to factor in time for review, reducing the probability of "timed-out" ad reviews.
+Community managers/owners will also be able to set the earliest time from the present that scheduled ads can be placed. Some communities may have shorter response times and some longer, so this gives them the opportunity to factor in time for review, reducing the probability of "timed-out" ad reviews for time-sensitive scheduled ads.
 
-*For example, if a community sets a window period of 48 hours, it means scheduled ads can only be placed starting 48 hours from the current hour. This gives the review and payment process about 48 hours.*
+*For example, if a community sets a window period of 48 hours, it means scheduled ads can only be for time starting 48 hours from the current hour. This gives the review and payment process about 48 hours.*
 
 Payments for scheduled ads should be made before the time they're set to start showing. Otherwise, the ad will not be shown, the time slot will be freed up for other people to use and a moderator may ask for a revision.
 
-Ads with late payments can be renegotiated for use at a later time as scheduled or unscheduled ads.
+The involvement of moderators will enable ads with late payments to be renegotiated for use at a later time as scheduled or unscheduled.
+
+### Universal rules for ads
+
+#### Decline payout
+
+For ads to be valid, they need to decline reward payouts, by setting:
+
+- `max_payout` to ZERO (0), or
+- `@null` account as 100% beneficiary (burning)
+
+#### Mandatory JSON metadata
+
+Native ads are valid when they contain a `native_ad` key in the post's JSON metadata field. Within the key, a dictionary of parameters will define the ad.
+
+- `type`: the type name of the ad, e.g. `native_post`
+- `properties`: contains the type-specific properties, e.g. `"devices": "mobile"`
+- `time_units`: the period of time the ad will run for (initial, can be updated through subsequent custom JSON ops)
 
 ### Universal rules for ads
 
