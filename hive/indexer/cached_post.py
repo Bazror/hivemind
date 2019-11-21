@@ -557,9 +557,10 @@ class CachedPost:
             nat_ad = NativeAd()
             ad_sql = nat_ad.process_ad(values)
         else:
-            # TODO: process updates, pre-approval status only
+            # TODO: process native ads updates, pre-approval status only
             sql = cls._update(values)
-        # return ad SQL only if present
+
+        # return ad SQL only if it is present
         if ad_sql is not None:
             _final = [sql] + tag_sqls + [ad_sql]
         else:
