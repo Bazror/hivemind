@@ -50,7 +50,7 @@ A bid operation will contain metadata with:
 - Transactional data (increase or decrease bid amount, token)
 - Duration data (time units) [optional]
 
-Building dedicated user interfaces for handling the bidding process will be possible. Appropriate data sets will be availed through the API. For example, an endpoint to retrieve bids sorted by community and price-per-time-unit enables developers to create realtime competitive bidding interfaces that show users their ads' positions against others bidding for the same community.
+Building dedicated user interfaces for handling the bidding process will be possible. Appropriate data sets will be availed through the API. For example, an endpoint to retrieve all active bids, sorted by community and price-per-time-unit, enables developers to create realtime competitive bidding interfaces that show users their ads' positions against ads of others who are bidding for space in the same community.
 
 ### Ad status
 
