@@ -1,6 +1,6 @@
 # Ad Types (WIP)
 
-*Various types of ads and suggested data structures. These will be ported to an appropriate Native Ads section, on a future **hivemind documentation** website.*
+*Various types of ads and suggested data structures. These will be ported to an appropriate Native Ads section, on a future **Hivemind documentation** website.*
 
 ---
 
@@ -12,29 +12,22 @@
 
 - Mark as "Sponsored"
 - Dedicate a high level, high visibility spot
-- Hidden until ad is paid for and time allocation is active
 
 ## Suggested Properties
 
-### Devices
-
-Types of devices to show ad on.
-
-**Key**: `devices`
-
-**Values**: *mobile, desktop, all*
+`devices`: *mobile, desktop, all*
 
 
 ## Example JSON Entry
 
 ```
 {
-    "community": "",
     "native_ad": {
-        "ad_type": "native_post",
-        "ad_properties": {
+        "type": "native_post",
+        "properties": {
             "devices": "mobile",
-        }
+        },
+        "time_units": 60
     }
 }
 

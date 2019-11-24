@@ -52,4 +52,18 @@ The following `custom_json` operations will need to be implemented.
 
 *Changes made to the database to accommodate ads.*
 
-...
+### hive_ads
+
+The `hive_ads` table hosts primary data for all valid native ads.
+
+```
+- post_id integer PRIMARY KEY
+- community_id integer NOT NULL
+- type varchar(16) NOT NULL
+- properties text NOT NULL
+- time_units integer NOT NULL
+- start_time timestamp
+- status smallint NOT NULL DEFAULT 0
+- mod_notes varchar(500) DEFAULT ''
+
+```
