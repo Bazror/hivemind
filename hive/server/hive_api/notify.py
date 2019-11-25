@@ -24,9 +24,10 @@ STRINGS = {
     NotifyType.error:          'error: <payload>',
     NotifyType.reblog:         '<src> resteemed your post',
     NotifyType.follow:         '<src> followed you',
-    NotifyType.reply:          '<src> replied to you',
+    NotifyType.reply:          '<src> replied to your post',
+    NotifyType.reply_comment:  '<src> replied to your comment',
     NotifyType.mention:        '<src> mentioned you',
-    NotifyType.vote:           '<src> voted on your post (<payload>)',
+    NotifyType.vote:           '<src> voted on your post',
 
     #NotifyType.update_account: '<dst> updated account',
     #NotifyType.receive:        '<src> sent <dst> <payload>',
@@ -39,11 +40,13 @@ STRINGS = {
 }
 
 @return_error_info
-async def account_notifications(context, account, min_score=0, last_id=None, limit=100):
+async def account_notifications(context, account, min_score=25, last_id=None, limit=100):
     """Load notifications for named account."""
     db = context['db']
     limit = valid_limit(limit, 100)
     account_id = await get_account_id(db, account)
+
+    if account[:5] == 'hive-': min_score = 0
 
     seek = ' AND hn.id < :last_id' if last_id else ''
     col = 'hn.community_id' if account[:5] == 'hive-' else 'dst_id'
@@ -88,10 +91,17 @@ def _render(row):
 
 def _render_msg(row):
     msg = STRINGS[row['type_id']]
+    payload = row['payload']
+    if row['type_id'] == NotifyType.vote and payload:
+        amt = float(payload[1:])
+        if amt >= 0.01:
+            msg += ' (<payload>)'
+            payload = "$%.2f" % amt
+
     if '<dst>' in msg: msg = msg.replace('<dst>', '@' + row['dst'])
     if '<src>' in msg: msg = msg.replace('<src>', '@' + row['src'])
     if '<post>' in msg: msg = msg.replace('<post>', _post_url(row))
-    if '<payload>' in msg: msg = msg.replace('<payload>', row['payload'] or 'null')
+    if '<payload>' in msg: msg = msg.replace('<payload>', payload or 'null')
     if '<comm>' in msg: msg = msg.replace('<comm>', row['community_title'])
     return msg
 

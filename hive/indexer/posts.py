@@ -194,7 +194,7 @@ class Posts:
     @classmethod
     def _insert_feed_cache(cls, post):
         """Insert the new post into feed cache if it's not a comment."""
-        if not post['depth'] and not post['community_id']:
+        if not post['depth']:
             account_id = Accounts.get_id(post['author'])
             FeedCache.insert(post['id'], account_id, post['date'])
 
@@ -238,7 +238,7 @@ class Posts:
         error = None
         if community_id and is_valid and not Community.is_post_valid(community_id, op):
             error = 'not authorized'
-            is_valid = False
+            #is_valid = False # TODO: reserved for future blacklist status?
             is_muted = True
 
         return dict(author=op['author'], permlink=op['permlink'], id=pid,
