@@ -48,10 +48,13 @@ class NativeAd:
             fields = ['type', 'properties', 'time_units']
             for k in fields:
                 if k not in ad_metadata: return None
-            # validate properties dict
-            ad_props = ad_metadata['properties']
-            if isinstance(ad_props, dict):  # properties must be in a dict
-                return ad_metadata
-            # TODO: validate time_units (int)
-            # TODO: better return implementation
+            # validate all internal data
+            if len(ad_metadata['type']) <= 16:
+                ad_props = ad_metadata['properties']
+                ad_time = ad_metadata['time_units']
+                if isinstance(ad_props, dict):   # properties must be in a dict
+                    if isinstance(ad_time, int):  # time units must be int
+                        if ad_time < 2147483647:  # respect SQL max int
+                            # TODO [beta]: check start time if present
+                            return ad_metadata
         return None
