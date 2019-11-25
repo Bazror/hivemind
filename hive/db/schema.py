@@ -324,7 +324,7 @@ def build_metadata_ads(metadata):
         # TODO: user_disabled field for user cancellation override, edge-case, useful??
         #sa.Column('user_disabled', BOOLEAN, nullable=False, server_default='0'),
 
-        # TODO: constraints
+        # TODO: indexes
     )
 
     return metadata
