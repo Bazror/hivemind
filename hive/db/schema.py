@@ -320,9 +320,12 @@ def build_metadata_ads(metadata):
         sa.Column('time_units', sa.Integer, nullable=False),
         sa.Column('start_time', sa.DateTime),  # optional, NULL means unscheduled (for API endpoint)
         sa.Column('status', SMALLINT, nullable=False, server_default='0'),
-        sa.Column('mod_notes', sa.String(500), server_default='')
+        sa.Column('mod_notes', sa.String(500), server_default=''),
         # TODO: user_disabled field for user cancellation override, edge-case, useful??
         #sa.Column('user_disabled', BOOLEAN, nullable=False, server_default='0'),
+
+        sa.ForeignKeyConstraint(['post_id'], ['hive_posts.id'], name='hive_ads_fk1'),
+        sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_fk2'),
 
         # TODO: indexes
     )
