@@ -313,7 +313,7 @@ def build_metadata_ads(metadata):
     """Build native ads schema def"""
     sa.Table(
         'hive_ads', metadata,
-        sa.Column('post_id', sa.Integer, primary_key=True),
+        sa.Column('post_id', sa.Integer, primary_key=True, autoincrement=False),
         sa.Column('community_id', sa.Integer, nullable=False),
         sa.Column('type', VARCHAR(16), nullable=False),
         sa.Column('properties', sa.Text, nullable=False),
