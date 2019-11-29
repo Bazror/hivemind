@@ -314,20 +314,31 @@ def build_metadata_ads(metadata):
     sa.Table(
         'hive_ads', metadata,
         sa.Column('post_id', sa.Integer, primary_key=True, autoincrement=False),
-        sa.Column('community_id', sa.Integer, nullable=False),
         sa.Column('type', VARCHAR(16), nullable=False),
         sa.Column('properties', sa.Text, nullable=False),
+
+        sa.ForeignKeyConstraint(['post_id'], ['hive_posts.id'], name='hive_ads_fk1'),
+
+        # TODO: indexes ??
+    )
+
+    sa.Table(
+        'hive_ads_state', metadata,
+        sa.Column('post_id', sa.Integer, nullable=False),
+        sa.Column('community_id', sa.Integer, nullable=False),
         sa.Column('time_units', sa.Integer, nullable=False),
+        sa.Column('bid_amount', sa.types.DECIMAL(10, 3), nullable=False),
+        sa.Column('bid_token', VARCHAR(5), nullable=False),
         sa.Column('start_time', sa.DateTime),  # optional, NULL means unscheduled (for API endpoint)
         sa.Column('status', SMALLINT, nullable=False, server_default='0'),
         sa.Column('mod_notes', sa.String(500), server_default=''),
         # TODO: user_disabled field for user cancellation override, edge-case, useful??
         #sa.Column('user_disabled', BOOLEAN, nullable=False, server_default='0'),
 
-        sa.ForeignKeyConstraint(['post_id'], ['hive_posts.id'], name='hive_ads_fk1'),
-        sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_fk2'),
-
-        # TODO: indexes
+        sa.ForeignKeyConstraint(['post_id'], ['hive_ads.post_id'], name='hive_ads_state_fk1'),
+        sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_state_fk2'),
+        sa.UniqueConstraint('post_id', 'community_id', name='hive_ads_state_ux1')
+        # TODO: indexes ??
     )
 
     return metadata

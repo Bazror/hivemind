@@ -130,7 +130,14 @@ Native ads are valid when they contain a `native_ad` key in the post's JSON meta
 
 - `type`: the type name of the ad, e.g. `native_post`
 - `properties`: contains the type-specific properties, e.g. `"devices": "mobile"`
-- `time_units`: the period of time the ad will run for (initial, can be updated through subsequent custom JSON ops)
+
+**adSubmit and adBid ops**
+
+A valid ad can be submitted to a community by broadcasting an `adSubmit` operation. Subsequent updates to parameters can be performed through `adBid` operations.
+
+- `time_units`: the period of time the ad will run for, in minutes
+- `bid_amount`: total amount offered for bid
+- `bid_token`: the token symbol
 
 ### Universal rules for ads
 

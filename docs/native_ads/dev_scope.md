@@ -45,8 +45,8 @@ The following `custom_json` operations will need to be implemented.
 
 **Users**
 
-- `ad_submit`
-- `ad_bid`
+- `ad_submit`: initial ad submission to a community
+- `ad_bid`: subsequent updates to an ad's bid within a community
 
 ## DB level
 
@@ -57,13 +57,25 @@ The following `custom_json` operations will need to be implemented.
 The `hive_ads` table hosts primary data for all valid native ads.
 
 ```
-- post_id integer PRIMARY KEY
-- community_id integer NOT NULL
-- type varchar(16) NOT NULL
-- properties text NOT NULL
-- time_units integer NOT NULL
-- start_time timestamp
-- status smallint NOT NULL DEFAULT 0
-- mod_notes varchar(500) DEFAULT ''
+    post_id integer PRIMARY KEY REFERENCES hive_posts (id),
+    type varchar(16) NOT NULL,
+    properties text NOT NULL
+
+```
+
+### hive_ads_state
+
+The `hive_ads_state` table maintains the state of ads in various communities
+
+```
+    post_id integer NOT NULL REFERENCES hive_ads (post_id),
+    community_id integer NOT NULL REFERENCES hive_communities (id),
+    time_units integer NOT NULL,
+    bid_amount numeric(10,3) NOT NULL,
+    bid_token varchar(5) NOT NULL,
+    start_time timestamp,
+    status smallint NOT NULL DEFAULT 0,
+    mod_notes varchar(500) DEFAULT '',
+    UNIQUE (post_id, community_id)
 
 ```
