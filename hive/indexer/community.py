@@ -32,6 +32,8 @@ TYPE_COUNCIL = 3
 START_BLOCK = 37500000
 START_DATE = '2019-10-22T07:12:36' # effectively 2019-10-22 12:00:00
 
+NATIVE_AD_ACTIONS = ['adSubmit', 'adBid', 'adApprove', 'adAllocate', 'adReject']
+
 # https://en.wikipedia.org/wiki/ISO_639-1
 LANGS = ("ab,aa,af,ak,sq,am,ar,an,hy,as,av,ae,ay,az,bm,ba,eu,be,bn,bh,bi,"
          "bs,br,bg,my,ca,ch,ce,ny,zh,cv,kw,co,cr,hr,cs,da,dv,nl,dz,en,eo,"
@@ -257,6 +259,7 @@ class CommunityOp:
         'flagPost':       ['community', 'account', 'permlink', 'notes'],
         'subscribe':      ['community'],
         'unsubscribe':    ['community'],
+        'adSubmit':       ['community', 'account', 'permlink', 'params'],
     }
 
     def __init__(self, actor, date):
@@ -310,6 +313,11 @@ class CommunityOp:
 
             # validate permissions
             self._validate_permissions()
+
+            # validate native ad states
+            if self.action in NATIVE_AD_ACTIONS:
+                self._validate_ad_states()
+                self._validate_ad_compliance()
 
             self.valid = True
 
@@ -405,6 +413,13 @@ class CommunityOp:
         elif action == 'flagPost':
             self._notify('flag_post', payload=self.notes)
 
+        # Native Ads actions
+        elif action == 'adSubmit':
+            # TODO: build query (time_units,bid_amount,bid_token, start_time,)
+            # check if an ad state exists for community
+            # create if non-existant, otherwise update
+            pass
+
         return True
 
     def _notify(self, op, **kwargs):
@@ -445,6 +460,9 @@ class CommunityOp:
         if 'notes'     in schema: self._read_notes()
         if 'title'     in schema: self._read_title()
         if 'props'     in schema: self._read_props()
+        # special validation for native ads actions
+        if self.action in NATIVE_AD_ACTIONS:
+            self._read_ad_params()
 
     def _read_community(self):
         _name = read_key_str(self.op, 'community', 16)
@@ -522,12 +540,44 @@ class CommunityOp:
         assert out, 'props were blank'
         self.props = out
 
+    def _read_ad_params(self):
+        params = read_key_dict(self.op, 'params')
+        ad_action = self.action
+
+        if ad_action == 'adSubmit' or ad_action == 'adBid':
+            if ad_action == 'adSubmit':
+                # time units are compulsory for adSubmit ops
+                assert 'time_units' in params, 'missing time units'
+            if 'time_units' in params:
+                ad_time = params['time_units']
+                assert isinstance(ad_time, int), 'time units must be integers'
+                assert ad_time < 2147483647, 'time units must be less than 2147483647'  # SQL max int
+
+            # check bid props
+            assert 'bid_amount' in params, 'missing bid amount'
+            # TODO: assert bid amount type?
+            assert 'bid_token' in params, 'missing bid token'
+            # TODO: assert valid token?
+        elif ad_action == 'adApprove' or ad_action == 'adReject':
+            # TODO: validate??
+            pass
+        elif ad_action == 'adAllocate':
+            # TODO: validate??
+            pass
 
     def _validate_permissions(self):
         community_id = self.community_id
         action = self.action
         actor_role = Community.get_user_role(community_id, self.actor_id)
         new_role = self.role_id
+        # ad related context
+        if action in NATIVE_AD_ACTIONS:
+            # TODO: get_native_ad_context(community_id)
+            # load ad settings for community
+            # possible class level variable, state might be needed in next step, process()
+            # e.g. token, min_bid, max_bid
+            # assert accepts_ads, 'community does not accept ads'
+            pass
 
         if action == 'setRole':
             assert actor_role >= Role.mod, 'only mods and up can alter roles'
@@ -561,6 +611,27 @@ class CommunityOp:
             assert not self._subscribed(self.actor_id), 'already subscribed'
         elif action == 'unsubscribe':
             assert self._subscribed(self.actor_id), 'already unsubscribed'
+        elif action == 'adSubmit':
+            assert actor_role > Role.muted, 'muted users cannot submit ads'
+            assert self.account == self.actor, 'can only submit ads for own account'
+        elif action == 'adApprove':
+            # TODO: assert self._ad_approved ??
+            assert actor_role >= Role.mod, 'only mods can approve ads'
+        elif action == 'adReject':
+            # TODO: assert not self._ad_approved ??
+            assert actor_role >= Role.mod, 'only mods can reject ads'
+        elif action == 'adAllocate':
+            assert actor_role >= Role.mod, 'only mods can allocate time slots to ads'
+
+    def _validate_ad_states(self):
+        # TODO: implement ordered flow logic
+        # ad status versus action
+        pass
+
+    def _validate_ad_compliance(self):
+        """Check if operations in ad comply with community level ad settings"""
+        # TODO: min, max, etc
+        pass
 
     def _subscribed(self, account_id):
         """Check an account's subscription status."""
