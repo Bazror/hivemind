@@ -551,13 +551,14 @@ class CachedPost:
         cls._notifs(post, pid, level, payout['payout'])
 
         # build the post insert/update SQL, add tag SQLs
+        nat_ad = NativeAd()
         if level == 'insert':
             sql = cls._insert(values)
-            # update native ads
-            nat_ad = NativeAd()
+            # process new native ad, if valid
             ad_sql = nat_ad.process_ad(values)
         else:
-            # TODO: process native ads updates, pre-approval status only
+            # TODO: process native ads updates, pre-approval status only (in all communities)
+            # ad_sql = nat_ad.process_ad(values, new=False)
             sql = cls._update(values)
 
         # return ad SQL only if it is present
