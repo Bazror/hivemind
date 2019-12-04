@@ -260,6 +260,9 @@ def build_metadata_community(metadata=None):
         sa.Column('description', sa.String(5000), nullable=False, server_default=''),
         sa.Column('flag_text',   sa.String(5000), nullable=False, server_default=''),
         sa.Column('settings',    TEXT,            nullable=False, server_default='{}'),
+        
+        # native ad settings
+        sa.Column('ads_enabled', BOOLEAN, nullable=False, server_default='0'),
 
         sa.UniqueConstraint('name', name='hive_communities_ux1'),
         sa.Index('hive_communities_ix1', 'rank', 'id')
@@ -309,8 +312,11 @@ def build_metadata_community(metadata=None):
 
     return metadata
 
-def build_metadata_ads(metadata):
+def build_metadata_ads(metadata=None):
     """Build native ads schema def"""
+    if not metadata:
+        metadata = sa.MetaData()
+
     sa.Table(
         'hive_ads', metadata,
         sa.Column('post_id', sa.Integer, primary_key=True, autoincrement=False),
@@ -328,8 +334,8 @@ def build_metadata_ads(metadata):
         sa.Column('community_id', sa.Integer, nullable=False),
         sa.Column('time_units', sa.Integer, nullable=False),
         sa.Column('bid_amount', sa.types.DECIMAL(10, 3), nullable=False),
-        sa.Column('bid_token', VARCHAR(5), nullable=False),
-        sa.Column('start_time', sa.DateTime),  # optional, NULL means unscheduled (for API endpoint)
+        sa.Column('bid_token', VARCHAR(10), nullable=False),
+        sa.Column('start_time', sa.DateTime),  # optional, NULL means unscheduled
         sa.Column('status', SMALLINT, nullable=False, server_default='0'),
         sa.Column('mod_notes', sa.String(500), server_default=''),
         # TODO: user_disabled field for user cancellation override, edge-case, useful??
@@ -338,6 +344,22 @@ def build_metadata_ads(metadata):
         sa.ForeignKeyConstraint(['post_id'], ['hive_ads.post_id'], name='hive_ads_state_fk1'),
         sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_state_fk2'),
         sa.UniqueConstraint('post_id', 'community_id', name='hive_ads_state_ux1')
+        # TODO: indexes ??
+    )
+
+    sa.Table(
+        'hive_ads_settings', metadata,
+        sa.Column('community_id', sa.Integer, primary_key=True, autoincrement=False),
+        sa.Column('token', VARCHAR(10), nullable=False, server_default='STEEM'),
+        sa.Column('burn', BOOLEAN, nullable=False, server_default='0'),
+        sa.Column('min_bid', sa.types.DECIMAL(10, 3)),
+        sa.Column('max_time_bid', sa.Integer),
+        sa.Column('max_time_active', sa.Integer),
+        # TODO: Native Ads v0.2
+        #sa.Column('scheduled_delay', sa.Integer, nullable=False, server_default='1440'),
+        #sa.Column('scheduled_timeout', sa.Integer)
+
+        sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_settings_fk1'),
         # TODO: indexes ??
     )
 
