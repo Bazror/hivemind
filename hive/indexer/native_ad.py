@@ -8,15 +8,17 @@ class NativeAd:
     """Handles the validation of ad posts and returns SQL statements"""
     sql_buffer = []
 
-    def process_ad(self, values, new=True):
+
+    @classmethod
+    def process_ad(cls, values, new=True):
         """Given a cached post insert value set,
         generate SQL statements for valid native ads
-        and add to sql_buffer"""
+        and return"""
         entry = dict(values)
         # check declined status
         if 'is_declined' in entry and entry['is_declined']:
             # check ad metadata
-            ad_metadata = self._check_ad_metadata(json.loads(entry['json']))
+            ad_metadata = cls._check_ad_metadata(json.loads(entry['json']))
             if ad_metadata is not None:
                 # build ad post (mandatory)
                 post = [
@@ -25,14 +27,15 @@ class NativeAd:
                     ('properties', json.dumps(ad_metadata['properties']))
                 ]
                 if new:
-                    return self._insert(post)
+                    return cls._insert(post)
                 else:
-                    # TODO: self._update(post)
+                    # TODO: cls._update(post)
                     pass
 
         return None
 
-    def _insert(self, values):
+    @classmethod
+    def _insert(cls, values):
         return DB.build_insert('hive_ads', values, pk='post_id')
 
     @staticmethod
