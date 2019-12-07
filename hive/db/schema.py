@@ -260,9 +260,6 @@ def build_metadata_community(metadata=None):
         sa.Column('description', sa.String(5000), nullable=False, server_default=''),
         sa.Column('flag_text',   sa.String(5000), nullable=False, server_default=''),
         sa.Column('settings',    TEXT,            nullable=False, server_default='{}'),
-        
-        # native ad settings
-        sa.Column('ads_enabled', BOOLEAN, nullable=False, server_default='0'),
 
         sa.UniqueConstraint('name', name='hive_communities_ux1'),
         sa.Index('hive_communities_ix1', 'rank', 'id')
@@ -350,6 +347,7 @@ def build_metadata_ads(metadata=None):
     sa.Table(
         'hive_ads_settings', metadata,
         sa.Column('community_id', sa.Integer, primary_key=True, autoincrement=False),
+        sa.Column('enabled', BOOLEAN, nullable=False, server_default='0'),
         sa.Column('token', VARCHAR(10), nullable=False, server_default='STEEM'),
         sa.Column('burn', BOOLEAN, nullable=False, server_default='0'),
         sa.Column('min_bid', sa.types.DECIMAL(10, 3)),
