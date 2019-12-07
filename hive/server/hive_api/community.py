@@ -71,8 +71,13 @@ async def get_community_context(context, name, account):
 async def list_top_communities(context, limit=25):
     """List top communities. Returns lite community list."""
     assert limit < 100
+    #sql = """SELECT name, title FROM hive_communities
+    #          WHERE rank > 0 ORDER BY rank LIMIT :limit"""
     sql = """SELECT name, title FROM hive_communities
-              WHERE rank > 0 ORDER BY rank LIMIT :limit"""
+              WHERE id = 1344247 OR rank > 0
+           ORDER BY (CASE WHEN id = 1344247 THEN 0 ELSE rank END)
+              LIMIT :limit"""
+
     out = await context['db'].query_all(sql, limit=limit)
 
     return [(r[0], r[1]) for r in out]
@@ -104,29 +109,34 @@ async def list_all_subscriptions(context, account):
     db = context['db']
     account_id = await get_account_id(db, account)
 
-    sql = """SELECT name, title FROM hive_communities
-              WHERE id IN (SELECT community_id
-                             FROM hive_subscriptions
-                            WHERE account_id = :account_id)
-           ORDER BY rank"""
+    sql = """SELECT c.name, c.title
+               FROM hive_communities c
+               JOIN hive_subscriptions s ON c.id = s.community_id
+          LEFT JOIN hive_roles r ON r.account_id = s.account_id
+                                AND r.community_id = c.id
+              WHERE s.account_id = :account_id
+           ORDER BY COALESCE(role_id, 0) DESC, c.rank"""
     out = await db.query_all(sql, account_id=account_id)
     return [(r[0], r[1]) for r in out]
 
 @return_error_info
 async def list_subscribers(context, community):
     """Lists subscribers of `community`."""
+    #limit = valid_limit(limit, 100)
     db = context['db']
     cid = await get_community_id(db, community)
 
-    sql = """SELECT ha.name, hr.role_id, hr.title
+    sql = """SELECT ha.name, hr.role_id, hr.title, hs.created_at
                FROM hive_subscriptions hs
           LEFT JOIN hive_roles hr ON hs.account_id = hr.account_id
                                  AND hs.community_id = hr.community_id
                JOIN hive_accounts ha ON hs.account_id = ha.id
               WHERE hs.community_id = :cid
-           ORDER BY hs.created_at DESC"""
+           ORDER BY hs.created_at DESC
+              LIMIT 250"""
     rows = await db.query_all(sql, cid=cid)
-    return [(r['name'], ROLES[r['role_id'] or 0], r['title']) for r in rows]
+    return [(r['name'], ROLES[r['role_id'] or 0], r['title'],
+             str(r['created_at'])) for r in rows]
 
 @return_error_info
 async def list_communities(context, last='', limit=100, query=None, observer=None):
