@@ -39,14 +39,14 @@ The following `custom_json` operations will need to be implemented.
 
 **Moderators**
 
-- `ad_approve`
-- `ad_allocate`
-- `ad_reject`
+- `adApprove`
+- `adAllocate`
+- `adReject`
 
 **Users**
 
-- `ad_submit`: initial ad submission to a community
-- `ad_bid`: subsequent updates to an ad's bid within a community
+- `adSubmit`: initial ad submission to a community
+- `adBid`: subsequent updates to an ad's bid within a community
 
 ## DB level
 
@@ -77,5 +77,28 @@ The `hive_ads_state` table maintains the state of ads in various communities
     status smallint NOT NULL DEFAULT 0,
     mod_notes varchar(500) DEFAULT '',
     UNIQUE (post_id, community_id)
+
+```
+
+### hive_ads_settings
+
+The `hive_ads_settings` table hosts ad-related settings/preferences for communities.
+
+```
+    community_id integer PRIMARY KEY REFERENCES hive_communities (id),
+    token varchar(10) NOT NULL DEFAULT 'STEEM',
+    burn boolean NOT NULL DEFAULT false,
+    min_bid numeric(10,3),
+    max_time_bid integer,
+    max_time_active integer
+
+```
+
+### hive_communities (modifications)
+
+A new field for storing a community's ad preference is introduced. A simple boolean, indicating whether or not a community has opted in to using Native Ads.
+
+```
+    ads_enabled boolean NOT NULL DEFAULT 0
 
 ```
