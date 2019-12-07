@@ -288,6 +288,8 @@ class CommunityOp:
         self.title = None
         self.props = None
 
+        self.ads_context = None
+
     @classmethod
     def process_if_valid(cls, actor, op_json, date):
         """Helper to instantiate, validate, process an op."""
@@ -570,14 +572,11 @@ class CommunityOp:
         action = self.action
         actor_role = Community.get_user_role(community_id, self.actor_id)
         new_role = self.role_id
-        # ad related context
-        if action in NATIVE_AD_ACTIONS:
-            # TODO: get_native_ad_context(community_id)
-            # load ad settings for community
-            # possible class level variable, state might be needed in next step, process()
-            # e.g. token, min_bid, max_bid
-            # assert accepts_ads, 'community does not accept ads'
-            pass
+
+        if action in NATIVE_AD_ACTIONS:  # only for native ads actions
+            self.ads_context = self._get_ads_context()
+            accepts_ads = self.ads_context['enabled']
+            assert accepts_ads, 'community does not accept ads'
 
         if action == 'setRole':
             assert actor_role >= Role.mod, 'only mods and up can alter roles'
@@ -611,6 +610,8 @@ class CommunityOp:
             assert not self._subscribed(self.actor_id), 'already subscribed'
         elif action == 'unsubscribe':
             assert self._subscribed(self.actor_id), 'already unsubscribed'
+
+        # native ads actions
         elif action == 'adSubmit':
             assert actor_role > Role.muted, 'muted users cannot submit ads'
             assert self.account == self.actor, 'can only submit ads for own account'
@@ -673,3 +674,42 @@ class CommunityOp:
                                  post_id=self.post_id,
                                  type_id=NotifyType['flag_post'],
                                  src_id=self.actor_id))
+
+    def _has_ad_settings(self):
+        """Check if current community has settings entry."""
+        sql = """SELECT 1 FROM hive_ads_settings
+                  WHERE community_id = :community_id"""
+        return bool(DB.query_one(sql, community_id=self.community_id))
+
+    def _get_ads_context(self):
+        """Retrieve current community's native ad settings."""
+
+        sql = """SELECT enabled, token, burn, min_bid, max_time_bid, max_time_active
+                  FROM hive_ads_settings
+                    WHERE community_id = :community_id"""
+        ads_prefs = DB.query_row(sql, community_id=self.community_id)
+        if ads_prefs:
+            result = {
+                'enabled': ads_prefs[0],
+                'token': ads_prefs[1],
+                'burn': ads_prefs[2],
+                'min_bid': ads_prefs[3],
+                'max_time_bid': ads_prefs[4],
+                'max_time_active': ads_prefs[5]
+            }
+        else:
+            # make default entry and return dummy default
+            sql = """INSERT INTO hive_ads_settings
+                        (community_id)
+                        VALUES (:community_id)"""
+                        # TODO: investigate INSERT conflict edge cases
+            DB.query(sql, community_id=self.community_id)
+            result = {
+                'enabled': False,
+                'token': 'STEEM',
+                'burn': False,
+                'min_bid': None,
+                'max_time_bid': None,
+                'max_time_active': None
+            }
+        return result
