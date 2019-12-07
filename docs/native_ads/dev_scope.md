@@ -86,6 +86,7 @@ The `hive_ads_settings` table hosts ad-related settings/preferences for communit
 
 ```
     community_id integer PRIMARY KEY REFERENCES hive_communities (id),
+    enabled boolean NOT NULL DEFAULT false,
     token varchar(10) NOT NULL DEFAULT 'STEEM',
     burn boolean NOT NULL DEFAULT false,
     min_bid numeric(10,3),
