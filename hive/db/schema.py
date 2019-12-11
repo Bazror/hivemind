@@ -10,7 +10,7 @@ from sqlalchemy.types import BOOLEAN
 
 #pylint: disable=line-too-long, too-many-lines, bad-whitespace
 
-DB_VERSION = 14
+DB_VERSION = 16
 
 def build_metadata():
     """Build schema def with SqlAlchemy"""
@@ -54,7 +54,7 @@ def build_metadata():
         sa.Column('kb_used', sa.Integer, nullable=False, server_default='0'), # deprecated
         sa.Column('rank', sa.Integer, nullable=False, server_default='0'),
 
-        sa.Column('lr_notif_id', sa.Integer, nullable=True),
+        sa.Column('lastread_at', sa.DateTime, nullable=False, server_default='1970-01-01 00:00:00'),
         sa.Column('active_at', sa.DateTime, nullable=False, server_default='1970-01-01 00:00:00'),
         sa.Column('cached_at', sa.DateTime, nullable=False, server_default='1970-01-01 00:00:00'),
         sa.Column('raw_json', sa.Text),
@@ -216,6 +216,9 @@ def build_metadata():
 
         sa.Index('hive_posts_cache_ix10', 'post_id', 'payout',                      postgresql_where=sql_text("is_grayed = '1' AND payout > 0")), # API: muted, by filter/date/payout
 
+        # index: stats
+        sa.Index('hive_posts_cache_ix20', 'community_id', 'author', 'payout', 'post_id', postgresql_where=sql_text("is_paidout = '0'")), # API: pending distribution; author payout
+
         # index: community ranked posts
         sa.Index('hive_posts_cache_ix30', 'community_id', 'sc_trend',   'post_id',  postgresql_where=sql_text("community_id IS NOT NULL AND is_grayed = '0' AND depth = 0")),        # API: community trend
         sa.Index('hive_posts_cache_ix31', 'community_id', 'sc_hot',     'post_id',  postgresql_where=sql_text("community_id IS NOT NULL AND is_grayed = '0' AND depth = 0")),        # API: community hot
@@ -253,10 +256,14 @@ def build_metadata_community(metadata=None):
         sa.Column('created_at',  sa.DateTime,     nullable=False),
         sa.Column('sum_pending', sa.Integer,      nullable=False, server_default='0'),
         sa.Column('num_pending', sa.Integer,      nullable=False, server_default='0'),
+        sa.Column('num_authors', sa.Integer,      nullable=False, server_default='0'),
         sa.Column('rank',        sa.Integer,      nullable=False, server_default='0'),
         sa.Column('subscribers', sa.Integer,      nullable=False, server_default='0'),
         sa.Column('is_nsfw',     BOOLEAN,         nullable=False, server_default='0'),
         sa.Column('about',       sa.String(120),  nullable=False, server_default=''),
+        sa.Column('primary_tag', sa.String(32),   nullable=False, server_default=''),
+        sa.Column('category',    sa.String(32),   nullable=False, server_default=''),
+        sa.Column('avatar_url',  sa.String(1024), nullable=False, server_default=''),
         sa.Column('description', sa.String(5000), nullable=False, server_default=''),
         sa.Column('flag_text',   sa.String(5000), nullable=False, server_default=''),
         sa.Column('settings',    TEXT,            nullable=False, server_default='{}'),
@@ -305,6 +312,7 @@ def build_metadata_community(metadata=None):
         sa.Index('hive_notifs_ix3', 'community_id', 'type_id', 'id', postgresql_where=sql_text("community_id IS NOT NULL")),
         sa.Index('hive_notifs_ix4', 'community_id', 'post_id', 'type_id', 'id', postgresql_where=sql_text("community_id IS NOT NULL AND post_id IS NOT NULL")),
         sa.Index('hive_notifs_ix5', 'post_id', 'type_id', 'dst_id', 'src_id', postgresql_where=sql_text("post_id IS NOT NULL AND type_id IN (16,17)")), # filter: dedupe
+        sa.Index('hive_notifs_ix6', 'dst_id', 'created_at', 'score', 'id', postgresql_where=sql_text("dst_id IS NOT NULL")), # unread
     )
 
     return metadata

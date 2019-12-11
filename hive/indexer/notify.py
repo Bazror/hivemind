@@ -24,7 +24,7 @@ class NotifyType(IntEnum):
     subscribe = 11
 
     reply = 12
-    #reply_comment = 13
+    reply_comment = 13
     reblog = 14
     follow = 15
     mention = 16
@@ -74,6 +74,12 @@ class Notify:
         """Instantiate from db row."""
         return Notify(**dict(row))
 
+    @classmethod
+    def set_lastread(cls, account, date):
+        """Update `lastread` column for a named account."""
+        sql = "UPDATE hive_accounts SET lastread_at = :date WHERE name = :name"
+        DB.query(sql, date=date, name=account)
+
     def to_dict(self):
         """Generate a db row."""
         return dict(
@@ -90,7 +96,7 @@ class Notify:
     def write(self):
         """Store this notification."""
         assert not self._id, 'notify has id %d' % self._id
-        ignore = ('reply', 'reblog', 'follow', 'mention', 'vote')
+        ignore = ('reply', 'reply_comment', 'reblog', 'follow', 'mention', 'vote')
         if self.enum.name not in ignore:
             log.warning("[NOTIFY] %s - src %s dst %s pid %s%s cid %s (%d/100)",
                         self.enum.name, self.src_id, self.dst_id, self.post_id,

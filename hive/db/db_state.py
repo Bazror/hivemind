@@ -270,6 +270,7 @@ class DbState:
             cls._set_ver(12)
 
         if cls._ver == 12: # community schema
+            assert False, 'not finalized'
             for table in ['hive_members', 'hive_flags', 'hive_modlog',
                           'hive_communities', 'hive_subscriptions',
                           'hive_roles', 'hive_notifs']:
@@ -295,6 +296,20 @@ class DbState:
             for sql in sqls:
                 cls.db().query(sql)
             cls._set_ver(14)
+
+        if cls._ver == 14:
+            cls.db().query("ALTER TABLE hive_communities ADD COLUMN primary_tag VARCHAR(32)   NOT NULL DEFAULT ''")
+            cls.db().query("ALTER TABLE hive_communities ADD COLUMN category    VARCHAR(32)   NOT NULL DEFAULT ''")
+            cls.db().query("ALTER TABLE hive_communities ADD COLUMN avatar_url  VARCHAR(1024) NOT NULL DEFAULT ''")
+            cls.db().query("ALTER TABLE hive_communities ADD COLUMN num_authors INTEGER       NOT NULL DEFAULT 0")
+            cls.db().query("CREATE INDEX hive_posts_cache_ix20 ON hive_posts_cache (community_id, author, payout, post_id) WHERE is_paidout = '0'")
+            cls._set_ver(15)
+
+        if cls._ver == 15:
+            cls.db().query("ALTER TABLE hive_accounts DROP COLUMN lr_notif_id")
+            cls.db().query("ALTER TABLE hive_accounts ADD COLUMN lastread_at TIMESTAMP WITHOUT TIME ZONE DEFAULT '1970-01-01 00:00:00' NOT NULL")
+            cls.db().query("CREATE INDEX hive_notifs_ix6 ON hive_notifs (dst_id, created_at, score, id) WHERE dst_id IS NOT NULL")
+            cls._set_ver(16)
 
         reset_autovac(cls.db())
 

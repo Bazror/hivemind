@@ -31,17 +31,6 @@ async def _get_community_id(db, name):
     _id = await db.query_one("SELECT id FROM hive_communities WHERE name = :n", n=name)
     return _id
 
-async def _cids(db, tag, observer_id):
-    if tag == 'my':
-        return await _subscribed(db, observer_id)
-    if tag == 'all':
-        # TODO: filter on not null
-        return await db.query_col("SELECT id FROM hive_communities")
-    if tag[:5] == 'hive-':
-        cid = await _get_community_id(db, tag)
-        return [cid] if cid else []
-    return []
-
 #TODO: async def posts_by_ranked
 async def pids_by_ranked(db, sort, start_author, start_permlink, limit, tag, observer_id=None):
     """Get a list of post_ids for a given posts query.
@@ -58,30 +47,39 @@ async def pids_by_ranked(db, sort, start_author, start_permlink, limit, tag, obs
     # TODO: `payout` should limit to ~24hrs
     # pylint: disable=too-many-arguments
 
-    # list of comm ids to query, if any
-    cids = await _cids(db, tag, observer_id)
-    if cids: tag = None
+    # list of comm ids to query, if tag is comms key
+    cids = None
+    single = None
+    if tag == 'my':
+        cids = await _subscribed(db, observer_id)
+        if not cids: return []
+    elif tag == 'all':
+        cids = []
+    elif tag[:5] == 'hive-':
+        single = await _get_community_id(db, tag)
+        if single: cids = [single]
 
-    prepend = []
-    if not tag and not start_permlink and sort in ('trending', 'hot'):
-        cid = cids[0] if len(cids) == 1 else DEFAULT_CID
-        prepend = await _pinned(db, cid)
+    # if tag was comms key, then no tag filter
+    if cids is not None: tag = None
 
     start_id = None
     if start_permlink:
         start_id = await _get_post_id(db, start_author, start_permlink)
 
-    if cids:
-        pids = await pids_by_community(db, cids, sort, start_id, limit)
-    else:
+    if cids is None:
         pids = await pids_by_category(db, tag, sort, start_id, limit)
+    else:
+        pids = await pids_by_community(db, cids, sort, start_id, limit)
 
-    # remove any pids to be prepended
-    for pid in prepend:
-        if pid in pids:
-            pids.remove(pid)
+    # if not filtered by tag, is first page trending: prepend pinned
+    if not tag and not start_id and sort == 'trending':
+        prepend = await _pinned(db, single or DEFAULT_CID)
+        for pid in prepend:
+            if pid in pids:
+                pids.remove(pid)
+        pids = prepend + pids
 
-    return prepend + pids
+    return pids
 
 
 async def pids_by_community(db, ids, sort, seek_id, limit):
@@ -89,7 +87,7 @@ async def pids_by_community(db, ids, sort, seek_id, limit):
 
     `sort` can be trending, hot, created, promoted, payout, or payout_comments.
     """
-    # pylint: disable=bad-whitespace
+    # pylint: disable=bad-whitespace, line-too-long
 
     # TODO: `payout` should limit to ~24hrs
     definitions = {#         field         pending toponly gray   promoted
@@ -101,13 +99,12 @@ async def pids_by_community(db, ids, sort, seek_id, limit):
         'muted':           ('payout',      True,   False,  True,  False)}
 
     # validate
-    assert ids, 'no community ids provided to query'
     assert sort in definitions, 'unknown sort %s' % sort
 
     # setup
     field, pending, toponly, gray, promoted = definitions[sort]
     table = 'hive_posts_cache'
-    where = ["community_id IN :ids"]
+    where = ["community_id IN :ids"] if ids else ["community_id IS NOT NULL AND community_id != 1337319"]
 
     # select
     if gray:     where.append("is_grayed = '1'")
@@ -115,7 +112,7 @@ async def pids_by_community(db, ids, sort, seek_id, limit):
     if toponly:  where.append("depth = 0")
     if pending:  where.append("is_paidout = '0'")
     if promoted: where.append('promoted > 0')
-    if sort == 'payout': where.append("payout_at < TIMESTAMP 'tomorrow'")
+    if sort == 'payout': where.append("payout_at < now() + interval '24 hours'")
 
     # seek
     if seek_id:
@@ -169,7 +166,7 @@ async def pids_by_category(db, tag, sort, last_id, limit):
     if params[3]: where.append('depth > 0')
     if params[4]: where.append('promoted > 0')
     if sort == 'muted': where.append("is_grayed = '1' AND payout > 0")
-    if sort == 'payout': where.append("payout_at < TIMESTAMP 'tomorrow'")
+    if sort == 'payout': where.append("payout_at < now() + interval '24 hours'")
 
     # filter by category or tag
     if tag:
@@ -193,12 +190,7 @@ async def pids_by_category(db, tag, sort, last_id, limit):
 async def _subscribed(db, account_id):
     sql = """SELECT community_id FROM hive_subscriptions
               WHERE account_id = :account_id"""
-    ids = await db.query_col(sql, account_id=account_id)
-    if not ids:
-        # TODO: evaluate handling of `all` when no subs
-        ids = await db.query_col("""SELECT id FROM hive_communities
-                                     WHERE rank > 0 AND rank < 10""")
-    return ids
+    return await db.query_col(sql, account_id=account_id)
 
 async def _pinned(db, community_id):
     """Get a list of pinned post `id`s in `community`."""
@@ -227,15 +219,41 @@ async def pids_by_blog(db, account: str, start_author: str = '',
                AND post_id = :start_id)
         """
 
+    # ignore community posts which were not reblogged
+    skip = """
+        SELECT id FROM hive_posts
+         WHERE author = :account
+           AND is_deleted = '0'
+           AND depth = 0
+           AND community_id IS NOT NULL
+           AND id NOT IN (SELECT post_id FROM hive_reblogs
+                           WHERE account = :account)"""
+
     sql = """
         SELECT post_id
           FROM hive_feed_cache
          WHERE account_id = :account_id %s
+           AND post_id NOT IN (%s)
       ORDER BY created_at DESC
          LIMIT :limit
-    """ % seek
+    """ % (seek, skip)
 
-    return await db.query_col(sql, account_id=account_id, start_id=start_id, limit=limit)
+    # alternate implementation -- may be more efficient
+    #sql = """
+    #    SELECT id
+    #      FROM (
+    #             SELECT id, author account, created_at FROM hive_posts
+    #              WHERE depth = 0 AND is_deleted = '0' AND community_id IS NULL
+    #              UNION ALL
+    #             SELECT post_id id, account, created_at FROM hive_reblogs
+    #           ) blog
+    #     WHERE account = :account %s
+    #  ORDER BY created_at DESC
+    #     LIMIT :limit
+    #""" % seek
+
+    return await db.query_col(sql, account_id=account_id, account=account,
+                              start_id=start_id, limit=limit)
 
 async def pids_by_feed_with_reblog(db, account: str, start_author: str = '',
                                    start_permlink: str = '', limit: int = 20):
@@ -272,6 +290,29 @@ async def pids_by_feed_with_reblog(db, account: str, start_author: str = '',
     return [(row[0], row[1]) for row in result]
 
 
+async def pids_by_posts(db, account: str, start_permlink: str = '', limit: int = 20):
+    """Get a list of post_ids representing top-level posts by an author."""
+    seek = ''
+    start_id = None
+    if start_permlink:
+        start_id = await _get_post_id(db, account, start_permlink)
+        if not start_id:
+            return []
+
+        seek = "AND id <= :start_id"
+
+    # `depth` in ORDER BY is a no-op, but forces an ix3 index scan (see #189)
+    sql = """
+        SELECT id FROM hive_posts
+         WHERE author = :account %s
+           AND is_deleted = '0'
+           AND depth = '0'
+      ORDER BY id DESC
+         LIMIT :limit
+    """ % seek
+
+    return await db.query_col(sql, account=account, start_id=start_id, limit=limit)
+
 async def pids_by_comments(db, account: str, start_permlink: str = '', limit: int = 20):
     """Get a list of post_ids representing comments by an author."""
     seek = ''
@@ -288,6 +329,7 @@ async def pids_by_comments(db, account: str, start_permlink: str = '', limit: in
         SELECT id FROM hive_posts
          WHERE author = :account %s
            AND is_deleted = '0'
+           AND depth > 0
       ORDER BY id DESC, depth
          LIMIT :limit
     """ % seek
@@ -347,23 +389,17 @@ async def pids_by_payout(db, account: str, start_author: str = '',
     start_id = None
     if start_permlink:
         start_id = await _get_post_id(db, start_author, start_permlink)
-        seek = """
-          AND rshares <= (
-            SELECT rshares
-              FROM hive_posts_cache
-             WHERE post_id = :start_id)
-        """
+        last = "(SELECT payout FROM hive_posts_cache WHERE post_id = :start_id)"
+        seek = ("""AND (payout < %s OR (payout = %s AND post_id > :start_id))"""
+                % (last, last))
 
     sql = """
-        SELECT hpc.post_id
-          FROM hive_posts_cache hpc
-          JOIN hive_posts hp ON hp.id = hpc.post_id
-         WHERE hp.author = :account
-           AND hp.is_deleted = '0'
-           AND hpc.is_paidout = '0' %s
-      ORDER BY rshares DESC
+        SELECT post_id
+          FROM hive_posts_cache
+         WHERE author = :account
+           AND is_paidout = '0' %s
+      ORDER BY payout DESC, post_id
          LIMIT :limit
     """ % seek
-    # AND hpc.rshares > 10e9
 
     return await db.query_col(sql, account=account, start_id=start_id, limit=limit)
