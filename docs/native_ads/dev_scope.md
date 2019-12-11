@@ -69,6 +69,7 @@ The `hive_ads_state` table maintains the state of ads in various communities
 
 ```
     post_id integer NOT NULL REFERENCES hive_ads (post_id),
+    account_id integer NOT NULL REFERENCES hive_accounts(id),
     community_id integer NOT NULL REFERENCES hive_communities (id),
     time_units integer NOT NULL,
     bid_amount numeric(10,3) NOT NULL,
@@ -76,7 +77,8 @@ The `hive_ads_state` table maintains the state of ads in various communities
     start_time timestamp,
     status smallint NOT NULL DEFAULT 0,
     mod_notes varchar(500) DEFAULT '',
-    UNIQUE (post_id, community_id)
+    UNIQUE (post_id, community_id),
+    EXCLUDE USING gist (community_id WITH =, tsrange(start_time, start_time + (time_units * interval '1 minute'))WITH &&)
 
 ```
 
@@ -90,6 +92,7 @@ The `hive_ads_settings` table hosts ad-related settings/preferences for communit
     token varchar(10) NOT NULL DEFAULT 'STEEM',
     burn boolean NOT NULL DEFAULT false,
     min_bid numeric(10,3),
+    min_time_bid integer,
     max_time_bid integer,
     max_time_active integer
 
