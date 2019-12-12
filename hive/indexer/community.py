@@ -10,6 +10,7 @@ import ujson as json
 from hive.db.adapter import Db
 from hive.indexer.accounts import Accounts
 from hive.indexer.notify import Notify
+from hive.indexer.native_ad import NativeAdOp
 from hive.db.db_state import DbState
 
 log = logging.getLogger(__name__)
@@ -270,6 +271,10 @@ class CommunityOp:
         'subscribe':      ['community'],
         'unsubscribe':    ['community'],
         'adSubmit':       ['community', 'account', 'permlink', 'params'],
+        'adBid':          ['community', 'account', 'permlink', 'params'],
+        'adApprove':      ['community', 'account', 'permlink', 'params'],
+        'adAllocate':     ['community', 'account', 'permlink', 'params'],
+        'adReject':       ['community', 'account', 'permlink', 'mod_notes'],
     }
 
     def __init__(self, actor, date):
@@ -298,7 +303,8 @@ class CommunityOp:
         self.title = None
         self.props = None
 
-        self.ads_context = None
+        
+        self.native_ad = None
 
     @classmethod
     def process_if_valid(cls, actor, op_json, date):
@@ -326,10 +332,15 @@ class CommunityOp:
             # validate permissions
             self._validate_permissions()
 
-            # validate native ad states
+            # init native ad context and validate op
             if self.action in NATIVE_AD_ACTIONS:
-                self._validate_ad_states()
-                self._validate_ad_compliance()
+                self.native_ad = NativeAdOp(
+                    self.community_id,
+                    self.post_id,
+                    self.account_id,
+                    {'action': self.action, 'params': read_key_dict(self.op, 'params')}
+                )
+                self.native_ad.validate_op()
 
             self.valid = True
 
@@ -426,11 +437,8 @@ class CommunityOp:
             self._notify('flag_post', payload=self.notes)
 
         # Native Ads actions
-        elif action == 'adSubmit':
-            # TODO: build query (time_units,bid_amount,bid_token, start_time,)
-            # check if an ad state exists for community
-            # create if non-existant, otherwise update
-            pass
+        elif action in NATIVE_AD_ACTIONS:
+            self.native_ad.process()
 
         return True
 
@@ -560,11 +568,12 @@ class CommunityOp:
             if ad_action == 'adSubmit':
                 # time units are compulsory for adSubmit ops
                 assert 'time_units' in params, 'missing time units'
+                assert 'start_time' in params, 'missing start_time'
+                # TODO: validate start_time format
             if 'time_units' in params:
                 ad_time = params['time_units']
                 assert isinstance(ad_time, int), 'time units must be integers'
                 assert ad_time < 2147483647, 'time units must be less than 2147483647'  # SQL max int
-
             # check bid props
             assert 'bid_amount' in params, 'missing bid amount'
             # TODO: assert bid amount type?
@@ -582,11 +591,6 @@ class CommunityOp:
         action = self.action
         actor_role = Community.get_user_role(community_id, self.actor_id)
         new_role = self.role_id
-
-        if action in NATIVE_AD_ACTIONS:  # only for native ads actions
-            self.ads_context = self._get_ads_context()
-            accepts_ads = self.ads_context['enabled']
-            assert accepts_ads, 'community does not accept ads'
 
         if action == 'setRole':
             assert actor_role >= Role.mod, 'only mods and up can alter roles'
@@ -637,15 +641,6 @@ class CommunityOp:
         elif action == 'adAllocate':
             assert actor_role >= Role.mod, 'only mods can allocate time slots to ads'
 
-    def _validate_ad_states(self):
-        # TODO: implement ordered flow logic
-        # ad status versus action
-        pass
-
-    def _validate_ad_compliance(self):
-        """Check if operations in ad comply with community level ad settings"""
-        # TODO: min, max, etc
-        pass
 
     def _subscribed(self, account_id):
         """Check an account's subscription status."""
@@ -684,42 +679,3 @@ class CommunityOp:
                                  post_id=self.post_id,
                                  type_id=NotifyType['flag_post'],
                                  src_id=self.actor_id))
-
-    def _has_ad_settings(self):
-        """Check if current community has settings entry."""
-        sql = """SELECT 1 FROM hive_ads_settings
-                  WHERE community_id = :community_id"""
-        return bool(DB.query_one(sql, community_id=self.community_id))
-
-    def _get_ads_context(self):
-        """Retrieve current community's native ad settings."""
-
-        sql = """SELECT enabled, token, burn, min_bid, max_time_bid, max_time_active
-                  FROM hive_ads_settings
-                    WHERE community_id = :community_id"""
-        ads_prefs = DB.query_row(sql, community_id=self.community_id)
-        if ads_prefs:
-            result = {
-                'enabled': ads_prefs[0],
-                'token': ads_prefs[1],
-                'burn': ads_prefs[2],
-                'min_bid': ads_prefs[3],
-                'max_time_bid': ads_prefs[4],
-                'max_time_active': ads_prefs[5]
-            }
-        else:
-            # make default entry and return dummy default
-            sql = """INSERT INTO hive_ads_settings
-                        (community_id)
-                        VALUES (:community_id)"""
-                        # TODO: investigate INSERT conflict edge cases
-            DB.query(sql, community_id=self.community_id)
-            result = {
-                'enabled': False,
-                'token': 'STEEM',
-                'burn': False,
-                'min_bid': None,
-                'max_time_bid': None,
-                'max_time_active': None
-            }
-        return result
