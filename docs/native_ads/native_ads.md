@@ -56,7 +56,7 @@ Building dedicated user interfaces for handling the bidding process will be poss
 
 The ad lifecycle is designed as an ordered flow. Different possibilities exist at each stage, with checks and balances coded in Hivemind to enforce the workflow.
 
-**0 - Draft**: ad is newly created or was rejected [user]
+**0 - Draft**: ad is not submitted to the community or was rejected [user, mod]
 
 **1 - Submitted**: a user has submitted it for review [user]
 
@@ -64,7 +64,7 @@ The ad lifecycle is designed as an ordered flow. Different possibilities exist a
 
 **3 - Funded**: user has paid the bid amount in full [user]
 
-**4 - Scheduled**: ad has been scheduled to run [mod / auto from payment]
+**4 - Scheduled**: ad has been scheduled to run [mod, auto from payment]
 
 ### Ad review
 
