@@ -139,24 +139,6 @@ A valid ad can be submitted to a community by broadcasting an `adSubmit` operati
 - `bid_amount`: total amount offered for bid
 - `bid_token`: the token symbol
 
-### Universal rules for ads
-
-#### Decline payout
-
-For ads to be valid, they need to decline reward payouts, by setting:
-
-- `max_payout` to ZERO (0), or
-- `@null` account as 100% beneficiary (burning)
-
-#### Mandatory JSON metadata
-
-Native ads are valid when they contain a `native_ad` key in the post's JSON metadata field. Within the key, a dictionary of parameters will define the ad.
-
-- `type`: the type name of the ad, e.g. `native_post`
-- `properties`: contains the type-specific properties, e.g. `"devices": "mobile"`
-- `time_units`: the period of time the ad will run for (initial, can be updated through subsequent custom JSON ops)
-
-
 ### Ad Types
 
 The flexibility of JSON-based data makes it easy to develop a wide array of ad types to suit different community types. More ad types will be developed as the project progresses. Read the **Ad Types** document (linked below) for more details on each ad type.
