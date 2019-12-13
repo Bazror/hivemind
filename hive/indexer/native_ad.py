@@ -4,11 +4,12 @@
 
 import json
 from hive.db.adapter import Db
+from hive.utils.normalize import is_valid_nai
 
 DB = Db.instance()
 
 class NativeAd:
-    """Handles the validation of ad posts and returns SQL statements"""
+    """Hosts validation and commmon methods for native ads"""
 
     @classmethod
     def process_ad(cls, values, new=True):
@@ -54,6 +55,63 @@ class NativeAd:
             _result = DB.query_col(sql, post_id=post_id)
 
         return result
+
+    @classmethod
+    def read_ad_schema(cls, action, params):
+        """Validates schema for given native ad operations."""
+        if action == 'adSubmit' or action == 'adBid':
+            if action == 'adSubmit':
+                # time units are compulsory for adSubmit ops
+                assert 'time_units' in params, 'missing time units'
+                assert 'start_time' in params, 'missing start_time'
+                # TODO: validate start_time format
+            if 'time_units' in params:
+                ad_time = params['time_units']
+                assert isinstance(ad_time, int), 'time units must be integers'
+                assert ad_time < 2147483647, 'time units must be less than 2147483647'  # SQL max int
+            # check bid props
+            assert 'bid_amount' in params, 'missing bid amount'
+            # TODO: assert bid amount type? (float)
+            assert 'bid_token' in params, 'missing bid token'
+            # TODO: assert valid token?
+        elif action == 'adApprove' or action == 'adReject':
+            # TODO: validate??
+            pass
+        elif action == 'adAllocate':
+            # TODO: validate??
+            pass
+        elif action == 'updateAdsSettings':
+            assert len(params) > 0, 'no native ad settings provided'
+            if 'enabled' in params:
+                assert isinstance(params['enabled'], bool), (
+                    "the 'enabled' property must be a boolean")
+            if 'token' in params:
+                # TODO: check if nai is in registry??
+                is_nai = is_valid_nai(params['token'])
+                if not is_nai:
+                    assert params['token'] in ['STEEM', 'SBD'], (
+                        'invalid token entered'
+                    )
+            if 'burn' in params:
+                assert isinstance(params['burn'], bool), (
+                    "the 'burn' property must be a boolean"
+                )
+            if 'min_bid' in params:
+                assert isinstance(params['min_bid'], float), (
+                    'minimum bid must be a number'
+                )
+            if 'min_time_bid' in params:
+                assert isinstance(params['min_time_bid'], int), (
+                    'minimum time units per bid must be an integer'
+                )
+            if 'max_time_bid' in params:
+                assert isinstance(params['max_time_bid'], int), (
+                    'maximum time units per bid must be an integer'
+                )
+            if 'max_time_active' in params:
+                assert isinstance(params['max_time_active', int]), (
+                    'maximum active time units per account must be an integer'
+                )
 
     @classmethod
     def _insert(cls, values):

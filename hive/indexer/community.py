@@ -10,6 +10,7 @@ import ujson as json
 from hive.db.adapter import Db
 from hive.indexer.accounts import Accounts
 from hive.indexer.notify import Notify
+from hive.indexer.native_ad import NativeAd
 from hive.indexer.native_ad import NativeAdOp
 from hive.db.db_state import DbState
 
@@ -260,21 +261,22 @@ class CommunityOp:
     #pylint: disable=too-many-instance-attributes
 
     SCHEMA = {
-        'updateProps':    ['community', 'props'],
-        'setRole':        ['community', 'account', 'role'],
-        'setUserTitle':   ['community', 'account', 'title'],
-        'mutePost':       ['community', 'account', 'permlink', 'notes'],
-        'unmutePost':     ['community', 'account', 'permlink', 'notes'],
-        'pinPost':        ['community', 'account', 'permlink'],
-        'unpinPost':      ['community', 'account', 'permlink'],
-        'flagPost':       ['community', 'account', 'permlink', 'notes'],
-        'subscribe':      ['community'],
-        'unsubscribe':    ['community'],
-        'adSubmit':       ['community', 'account', 'permlink', 'params'],
-        'adBid':          ['community', 'account', 'permlink', 'params'],
-        'adApprove':      ['community', 'account', 'permlink', 'params'],
-        'adAllocate':     ['community', 'account', 'permlink', 'params'],
-        'adReject':       ['community', 'account', 'permlink', 'mod_notes'],
+        'updateProps':          ['community', 'props'],
+        'setRole':              ['community', 'account', 'role'],
+        'setUserTitle':         ['community', 'account', 'title'],
+        'mutePost':             ['community', 'account', 'permlink', 'notes'],
+        'unmutePost':           ['community', 'account', 'permlink', 'notes'],
+        'pinPost':              ['community', 'account', 'permlink'],
+        'unpinPost':            ['community', 'account', 'permlink'],
+        'flagPost':             ['community', 'account', 'permlink', 'notes'],
+        'subscribe':            ['community'],
+        'unsubscribe':          ['community'],
+        'adSubmit':             ['community', 'account', 'permlink', 'na_params'],
+        'adBid':                ['community', 'account', 'permlink', 'na_params'],
+        'adApprove':            ['community', 'account', 'permlink', 'na_params'],
+        'adAllocate':           ['community', 'account', 'permlink', 'na_params'],
+        'adReject':             ['community', 'account', 'permlink', 'na_params'],
+        'updateAdsSettings':    ['community', 'na_params']
     }
 
     def __init__(self, actor, date):
@@ -480,8 +482,11 @@ class CommunityOp:
         if 'title'     in schema: self._read_title()
         if 'props'     in schema: self._read_props()
         # special validation for native ads actions
-        if self.action in NATIVE_AD_ACTIONS:
-            self._read_ad_params()
+        if 'na_params' in schema:
+            action = self.action
+            params = read_key_dict(self.op, 'na_params')
+            NativeAd.read_ad_schema(action, params)
+
 
     def _read_community(self):
         _name = read_key_str(self.op, 'community', 16)
@@ -559,31 +564,6 @@ class CommunityOp:
         assert out, 'props were blank'
         self.props = out
 
-    def _read_ad_params(self):
-        params = read_key_dict(self.op, 'params')
-        ad_action = self.action
-
-        if ad_action == 'adSubmit' or ad_action == 'adBid':
-            if ad_action == 'adSubmit':
-                # time units are compulsory for adSubmit ops
-                assert 'time_units' in params, 'missing time units'
-                assert 'start_time' in params, 'missing start_time'
-                # TODO: validate start_time format
-            if 'time_units' in params:
-                ad_time = params['time_units']
-                assert isinstance(ad_time, int), 'time units must be integers'
-                assert ad_time < 2147483647, 'time units must be less than 2147483647'  # SQL max int
-            # check bid props
-            assert 'bid_amount' in params, 'missing bid amount'
-            # TODO: assert bid amount type?
-            assert 'bid_token' in params, 'missing bid token'
-            # TODO: assert valid token?
-        elif ad_action == 'adApprove' or ad_action == 'adReject':
-            # TODO: validate??
-            pass
-        elif ad_action == 'adAllocate':
-            # TODO: validate??
-            pass
 
     def _validate_permissions(self):
         community_id = self.community_id
@@ -639,6 +619,8 @@ class CommunityOp:
             assert actor_role >= Role.mod, 'only mods can reject ads'
         elif action == 'adAllocate':
             assert actor_role >= Role.mod, 'only mods can allocate time slots to ads'
+        elif action == 'updateAdsSettings':
+            assert actor_role >= Role.admin, 'only admins can change ad settings'
 
 
     def _subscribed(self, account_id):
