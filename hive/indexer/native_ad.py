@@ -51,7 +51,7 @@ class NativeAd:
         else:
             sql = """SELECT status FROM hive_ads_state
                        WHERE post_id = :post_id"""
-            _result = DB.query_col(sql, post_id=post_id)            
+            _result = DB.query_col(sql, post_id=post_id)
 
         return result
 
@@ -186,8 +186,6 @@ class NativeAdOp:
             # TODO: investigate expense of "checking if an adBid op effects changes in DB state"
             # reading cost vs simply writing
 
-            # TODO: check bid token compliance
-
             op_bid_amount = self.params['bid_amount']
             op_time_units = self.params['time_units']
 
@@ -195,6 +193,11 @@ class NativeAdOp:
             min_bid = self.ads_context['min_bid']
             max_time_bid = self.ads_context['max_time_bid']
             max_time_active = self.ads_context['max_time_active']
+
+            accepted_token = self.ads_context['token']
+            if 'bid_token' in self.params:
+                assert self.params['bid_token'] == accepted_token, (
+                    'token not accepted as payment in community')
 
             if min_bid:
                 assert op_bid_amount >= min_bid, (
