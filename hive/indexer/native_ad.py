@@ -191,6 +191,7 @@ class NativeAdOp:
 
             active_units = self._get_active_time_units()
             min_bid = self.ads_context['min_bid']
+            min_time_bid = self.ads_context['min_time_bid']
             max_time_bid = self.ads_context['max_time_bid']
             max_time_active = self.ads_context['max_time_active']
 
@@ -203,6 +204,11 @@ class NativeAdOp:
                 assert op_bid_amount >= min_bid, (
                     'bid amount (%d) is less than community minimum (%d)'
                     % (op_bid_amount, min_bid))
+
+            if min_time_bid:
+                assert op_time_units >= min_time_bid, (
+                    'the community accepts a minimum of (%d) time units per bid'
+                    % min_time_bid)
 
             if max_time_bid:
                 assert op_time_units <= max_time_bid, (
@@ -268,8 +274,9 @@ class NativeAdOp:
     def _get_ads_context(self):
         """Retrieve current community's native ad settings."""
 
-        sql = """SELECT enabled, token, burn, min_bid, max_time_bid, max_time_active
-                  FROM hive_ads_settings
+        sql = """SELECT enabled, token, burn, min_bid,
+                        min_time_bid, max_time_bid, max_time_active
+                    FROM hive_ads_settings
                     WHERE community_id = :community_id"""
         ads_prefs = DB.query_row(sql, community_id=self.community_id)
 
@@ -279,8 +286,9 @@ class NativeAdOp:
                 'token': ads_prefs[1],
                 'burn': ads_prefs[2],
                 'min_bid': ads_prefs[3],
-                'max_time_bid': ads_prefs[4],
-                'max_time_active': ads_prefs[5]
+                'min_time_bid': ads_prefs[4],
+                'max_time_bid': ads_prefs[5],
+                'max_time_active': ads_prefs[6]
             }
         else:
             # make default entry and return dummy default
@@ -294,6 +302,7 @@ class NativeAdOp:
                 'token': 'STEEM',
                 'burn': False,
                 'min_bid': None,
+                'min_time_bid': None,
                 'max_time_bid': None,
                 'max_time_active': None
             }
