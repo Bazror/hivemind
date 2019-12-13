@@ -303,7 +303,6 @@ class CommunityOp:
         self.title = None
         self.props = None
 
-        
         self.native_ad = None
 
     @classmethod

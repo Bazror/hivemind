@@ -1,4 +1,7 @@
 """Handles native ad related ops"""
+
+#pylint: disable=too-many-lines
+
 import json
 from hive.db.adapter import Db
 
@@ -6,7 +9,6 @@ DB = Db.instance()
 
 class NativeAd:
     """Handles the validation of ad posts and returns SQL statements"""
-    sql_buffer = []
 
     @classmethod
     def process_ad(cls, values, new=True):
@@ -19,7 +21,7 @@ class NativeAd:
             # check ad metadata
             ad_metadata = cls._check_ad_metadata(json.loads(entry['json']))
             if ad_metadata is not None:
-                # build ad post (mandatory)
+                # build ad post
                 post = [
                     ('post_id', entry['post_id']),
                     ('type', ad_metadata['type']),
@@ -28,14 +30,38 @@ class NativeAd:
                 if new:
                     return cls._insert(post)
                 else:
-                    # TODO: cls._update(post)
-                    pass
+                    return cls._update(post)
 
         return None
 
     @classmethod
+    def get_ad_status(cls, post_id, community_id=None):
+        """Returns a list of the current status codes of ad within all communities.
+           Can also be used to query for one community, by passing a `community_id`."""
+        if community_id:
+            sql = """SELECT status FROM hive_ads_state
+                      WHERE post_id = :post_id
+                      AND community_id = :community_id"""
+            _result = DB.query_one(sql, post_id=post_id, community_id=community_id)
+
+            if _result:
+                result = int(DB.query_one(sql, post_id=post_id, community_id=community_id))
+            else:
+                result = None
+        else:
+            sql = """SELECT status FROM hive_ads_state
+                       WHERE post_id = :post_id"""
+            _result = DB.query_col(sql, post_id=post_id)            
+
+        return result
+
+    @classmethod
     def _insert(cls, values):
         return DB.build_insert('hive_ads', values, pk='post_id')
+
+    @classmethod
+    def _update(cls, values):
+        return DB.build_update('hive_ads', values, pk='post_id')
 
     @staticmethod
     def _check_ad_metadata(data):
@@ -109,7 +135,8 @@ class NativeAdOp:
                            )
                 DB.query(sql, **data)
         else:
-            assert not self.is_new_state, 'cannot perform %s operation on non-existant ad state'
+            assert not self.is_new_state, (
+                'cannot perform %s operation on non-existant ad state' % action)
             if action == 'adBid':
                 pass # TODO
             elif action == 'adApprove':
@@ -120,8 +147,6 @@ class NativeAdOp:
                 pass # TODO
 
     def _validate_ad_states(self):
-        # TODO: implement ordered flow logic
-        # ad status versus action
         action = self.action
         self.ad_state = self._get_ad_state()
 
@@ -131,11 +156,21 @@ class NativeAdOp:
             ad_status = None
 
         if action == 'adSubmit':
-            # status: None, 0 only
+            # status=None or 0 only
             assert ad_status in [None, 0], 'can only submit ads that are new or in draft status'
         elif action == 'adBid':
-            # status: 1 only
+            # status=1 only
             assert ad_status == 1, 'can only bid for ads that are pending review'
+        elif action == 'adApprove':
+            # status=1 only
+            assert ad_status == 1, 'cannot approve draft ads'
+        elif action == 'adReject':
+            # status=1 only
+            assert ad_status in [1, 2], 'can only reject ads pending review and not yet funded'
+        elif action == 'adAllocate':
+            # status=3 and start_time=Null
+            assert ad_status == 3 and self.ad_state['start_time'] is None, (
+                "can allocate time to a funded ad that doesn't have a start time set")
 
     def _validate_ad_compliance(self):
         """Check if operations in ad comply with community level ad settings"""
@@ -169,7 +204,7 @@ class NativeAdOp:
             if max_time_bid:
                 assert op_time_units <= max_time_bid, (
                     'the community accepts a maximum of (%d) time units per bid'
-                    % (max_time_bid))
+                    % max_time_bid)
 
             if max_time_active:
                 tot_active_units = active_units + op_time_units
