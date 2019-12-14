@@ -27,6 +27,7 @@ Adding an extra `native_ads` key in community settings to hold the following set
 - `token` (token symbol)
 - `burn` (boolean)
 - `min_bid` (float)
+- `min_time_bid` (integer)
 - `max_time_bid` (integer)
 - `max_time_active` (integer)
 - `scheduled_ads_delay` (integer)

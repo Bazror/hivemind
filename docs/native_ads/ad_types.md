@@ -26,8 +26,7 @@
         "type": "native_post",
         "properties": {
             "devices": "mobile",
-        },
-        "time_units": 60
+        }
     }
 }
 
