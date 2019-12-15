@@ -100,7 +100,7 @@ class NativeAd:
             if 'token' in params:
                 # TODO: check if nai is in registry??
                 is_nai = is_valid_nai(params['token'])
-                if not is_nai:
+                if not is_nai:  # TODO: pre-smt handler
                     assert params['token'] in ['STEEM', 'SBD'], (
                         'invalid token entered'
                     )
@@ -180,7 +180,7 @@ class NativeAdOp:
             'community_id': self.community_id
         }
 
-        # only add account_id for ops that don't need it
+        # only add account_id for ops that need it
         if self.account_id: data['account_id'] = self.account_id
 
         # add params to final dict
@@ -236,24 +236,19 @@ class NativeAdOp:
             ad_status = None
 
         if action == 'adSubmit':
-            # status=None or draft only
             assert ad_status in [None, Status.draft], (
                 'can only submit ads that are new or in draft status')
 
         assert self.ad_state, (
             'ad not yet submitted to community; cannot perform %s op' % action)
         if action == 'adBid':
-            # status=submitted only
             assert ad_status == Status.submitted, 'can only bid for ads that are pending review'
         elif action == 'adApprove':
-            # status=submitted only
             assert ad_status == Status.submitted, 'can only approve ads that are pending review'
         elif action == 'adReject':
-            # status=submitted only
             assert ad_status == Status.submitted, 'can only reject ads that are pending review'
         elif action == 'adAllocate':
-            # status=funded and start_time=Null
-            # TODO: maybe start_time less than x mins away?? for corrections/changes
+            # TODO: maybe start_time < x mins away?? for corrections/reallocations
             assert ad_status == Status.funded and self.ad_state['start_time'] is None, (
                 "can only allocate time to a funded ad that doesn't have a start time set")
 
@@ -322,9 +317,7 @@ class NativeAdOp:
                     WHERE post_id = :post_id
                     AND community_id = :community_id"""
         _state = DB.query_all(sql, post_id=self.post_id, community_id=self.community_id)
-        #_state = DB.query_all(sql, post_id=self.post_id, community_id=self.community_id)
         if _state:
-            print(_state)
             result = {
                 'time_units': _state[0],
                 'bid_amount': _state[1],
