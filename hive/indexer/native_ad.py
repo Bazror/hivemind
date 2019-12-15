@@ -258,7 +258,7 @@ class NativeAdOp:
                 "can only allocate time to a funded ad that doesn't have a start time set")
 
     def _validate_ad_compliance(self):
-        """Check if operations in ad comply with community level ad settings"""
+        """Check if operation complies with community level ad settings"""
 
         self.ads_context = self._get_ads_context()
         accepts_ads = self.ads_context['enabled']
@@ -266,45 +266,47 @@ class NativeAdOp:
 
         action = self.action
 
-        if action == 'adSubmit':
+        if action == 'adSubmit' or action == 'adBid':
+            self._check_bid()
 
-            # TODO: investigate expense of "checking if an adBid op effects changes in DB state"
-            # reading cost vs simply writing
 
-            op_bid_amount = self.params['bid_amount']
-            op_time_units = self.params['time_units']
+    def _check_bid(self):
+        """Check if bid token, amount and time units respect community's preferences."""
 
-            active_units = self._get_active_time_units()
-            min_bid = self.ads_context['min_bid']
-            min_time_bid = self.ads_context['min_time_bid']
-            max_time_bid = self.ads_context['max_time_bid']
-            max_time_active = self.ads_context['max_time_active']
+        op_bid_amount = self.params['bid_amount']
+        op_time_units = self.params['time_units']
 
-            accepted_token = self.ads_context['token']
-            if 'bid_token' in self.params:
-                assert self.params['bid_token'] == accepted_token, (
-                    'token not accepted as payment in community')
+        active_units = self._get_active_time_units()
+        min_bid = self.ads_context['min_bid']
+        min_time_bid = self.ads_context['min_time_bid']
+        max_time_bid = self.ads_context['max_time_bid']
+        max_time_active = self.ads_context['max_time_active']
 
-            if min_bid:
-                assert op_bid_amount >= min_bid, (
-                    'bid amount (%d) is less than community minimum (%d)'
-                    % (op_bid_amount, min_bid))
+        accepted_token = self.ads_context['token']
+        if 'bid_token' in self.params:
+            assert self.params['bid_token'] == accepted_token, (
+                'token not accepted as payment in community')
 
-            if min_time_bid:
-                assert op_time_units >= min_time_bid, (
-                    'the community accepts a minimum of (%d) time units per bid'
-                    % min_time_bid)
+        if min_bid:
+            assert op_bid_amount >= min_bid, (
+                'bid amount (%d) is less than community minimum (%d)'
+                % (op_bid_amount, min_bid))
 
-            if max_time_bid:
-                assert op_time_units <= max_time_bid, (
-                    'the community accepts a maximum of (%d) time units per bid'
-                    % max_time_bid)
+        if min_time_bid:
+            assert op_time_units >= min_time_bid, (
+                'the community accepts a minimum of (%d) time units per bid'
+                % min_time_bid)
 
-            if max_time_active:
-                tot_active_units = active_units + op_time_units
-                assert tot_active_units <= max_time_active, (
-                    "total active time units (%d) will exceed community's maximum allowed (%d)"
-                    % (tot_active_units, max_time_active))
+        if max_time_bid:
+            assert op_time_units <= max_time_bid, (
+                'the community accepts a maximum of (%d) time units per bid'
+                % max_time_bid)
+
+        if max_time_active:
+            tot_active_units = active_units + op_time_units
+            assert tot_active_units <= max_time_active, (
+                "total active time units (%d) will exceed community's maximum allowed (%d)"
+                % (tot_active_units, max_time_active))
 
     def _has_ads_settings(self):
         """Check if current community has settings entry."""
