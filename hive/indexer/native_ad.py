@@ -288,9 +288,10 @@ class NativeAdOp:
                 'token not accepted as payment in community')
 
         if min_bid:
-            assert op_bid_amount >= min_bid, (
-                'bid amount (%d) is less than community minimum (%d)'
-                % (op_bid_amount, min_bid))
+            if op_bid_amount > 0:  # accomodate zero bids as ad withdrawal
+                assert op_bid_amount >= min_bid, (
+                    'bid amount (%d) is less than community minimum (%d)'
+                    % (op_bid_amount, min_bid))
 
         if min_time_bid:
             assert op_time_units >= min_time_bid, (
