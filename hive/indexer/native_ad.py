@@ -169,8 +169,8 @@ class NativeAdOp:
 
     def validate_op(self):
         """Validate the native ad op."""
+        self._validate_ad_state()
         self._validate_ad_compliance()
-        self._validate_ad_states()
 
     def process(self):
         """Process a validated native ad op. Assumes op is validated."""
@@ -226,7 +226,7 @@ class NativeAdOp:
             elif action == 'adReject':
                 pass # TODO
 
-    def _validate_ad_states(self):
+    def _validate_ad_state(self):
         action = self.action
         self.ad_state = self._get_ad_state()
 
