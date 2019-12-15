@@ -3,10 +3,19 @@
 #pylint: disable=too-many-lines
 
 import json
+from enum import IntEnum
 from hive.db.adapter import Db
 from hive.utils.normalize import is_valid_nai
 
 DB = Db.instance()
+
+class Status(IntEnum):
+    """Labels for ad status."""
+    draft = 0
+    submitted = 1
+    approved = 2
+    funded = 3
+    scheduled = 4
 
 class NativeAd:
     """Hosts validation and commmon methods for native ads"""
@@ -214,21 +223,26 @@ class NativeAdOp:
             ad_status = None
 
         if action == 'adSubmit':
-            # status=None or 0 only
-            assert ad_status in [None, 0], 'can only submit ads that are new or in draft status'
-        elif action == 'adBid':
-            # status=1 only
-            assert ad_status == 1, 'can only bid for ads that are pending review'
+            # status=None or draft only
+            assert ad_status in [None, Status.draft], (
+                'can only submit ads that are new or in draft status')
+
+        assert self.ad_state, (
+            'ad not yet submitted to community; cannot perform %s op' % action)
+        if action == 'adBid':
+            # status=submitted only
+            assert ad_status == Status.submitted, 'can only bid for ads that are pending review'
         elif action == 'adApprove':
-            # status=1 only
-            assert ad_status == 1, 'cannot approve draft ads'
+            # status=submitted only
+            assert ad_status == Status.submitted, 'can only approve ads that are pending review'
         elif action == 'adReject':
-            # status=1 only
-            assert ad_status in [1, 2], 'can only reject ads pending review and not yet funded'
+            # status=submitted only
+            assert ad_status == Status.submitted, 'can only reject ads that are pending review'
         elif action == 'adAllocate':
-            # status=3 and start_time=Null
-            assert ad_status == 3 and self.ad_state['start_time'] is None, (
-                "can allocate time to a funded ad that doesn't have a start time set")
+            # status=funded and start_time=Null
+            # TODO: maybe start_time less than x mins away?? for corrections/changes
+            assert ad_status == Status.funded and self.ad_state['start_time'] is None, (
+                "can only allocate time to a funded ad that doesn't have a start time set")
 
     def _validate_ad_compliance(self):
         """Check if operations in ad comply with community level ad settings"""
