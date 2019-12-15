@@ -273,7 +273,7 @@ class CommunityOp:
         'unsubscribe':          ['community'],
         'adSubmit':             ['community', 'account', 'permlink', 'na_params'],
         'adBid':                ['community', 'account', 'permlink', 'na_params'],
-        'adApprove':            ['community', 'account', 'permlink', 'na_params'],
+        'adApprove':            ['community', 'account', 'permlink'],
         'adAllocate':           ['community', 'account', 'permlink', 'na_params'],
         'adReject':             ['community', 'account', 'permlink', 'na_params'],
         'updateAdsSettings':    ['community', 'na_params']
