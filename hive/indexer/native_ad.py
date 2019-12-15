@@ -317,7 +317,7 @@ class NativeAdOp:
 
     def _get_ad_state(self):
         """Return the full state of the ad in the current community's context."""
-        sql = """SELECT time_units, bid_amount, bid_token, start_time, status, mod_notes
+        sql = """SELECT time_units, bid_amount, bid_token, start_time, status
                   FROM hive_ads_state
                     WHERE post_id = :post_id
                     AND community_id = :community_id"""
@@ -330,8 +330,7 @@ class NativeAdOp:
                 'bid_amount': _state[1],
                 'bid_token': _state[2],
                 'start_time': _state[3],
-                'status': _state[4],
-                'mod_notes': _state[5]
+                'status': _state[4]
             }
         else:
             # flag new state creation, return None
