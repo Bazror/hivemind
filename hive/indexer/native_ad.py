@@ -177,12 +177,15 @@ class NativeAdOp:
         action = self.action
         data = {
             'post_id': self.post_id,
-            'account_id': self.account_id,
             'community_id': self.community_id
         }
 
-        for k in self.params.keys():
-            data[k] = self.params[k]
+        # only add account_id for ops that don't need it
+        if self.account_id: data['account_id'] = self.account_id
+
+        # add params to final dict
+        for k in self.params.keys(): data[k] = self.params[k]
+
         columns = data.keys()
         values = ', '.join([":" + k for k in columns])
 
