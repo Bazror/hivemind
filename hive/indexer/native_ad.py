@@ -18,11 +18,11 @@ class Status(IntEnum):
     scheduled = 4
 
 class NativeAd:
-    """Hosts validation and commmon methods for native ads"""
+    """Hosts validation and commmon methods for native ads."""
 
     @classmethod
     def process_ad(cls, values, new=True):
-        """Given a cached post insert value set,
+        """Hooks into cached posts sql building. Given a cached post insert value set,
         generate SQL statements for valid native ads
         and return."""
         entry = dict(values)
@@ -72,23 +72,26 @@ class NativeAd:
             if action == 'adSubmit':
                 # time units are compulsory for adSubmit ops
                 assert 'time_units' in params, 'missing time units'
-                assert 'start_time' in params, 'missing start_time'
                 # TODO: validate start_time format
             if 'time_units' in params:
                 ad_time = params['time_units']
                 assert isinstance(ad_time, int), 'time units must be integers'
-                assert ad_time < 2147483647, 'time units must be less than 2147483647'  # SQL max int
+                assert ad_time < 2147483647, (
+                    'time units must be less than 2147483647')  # SQL max int
             # check bid props
             assert 'bid_amount' in params, 'missing bid amount'
             # TODO: assert bid amount type? (float)
             assert 'bid_token' in params, 'missing bid token'
             # TODO: assert valid token?
-        elif action == 'adApprove' or action == 'adReject':
+        elif action == 'adApprove':
             # TODO: validate??
             pass
+        elif action == 'adReject':
+            assert 'mod_notes' in params, 'missing moderation notes for adReject op'
+            # TODO: enforce a none blank string rule for mod_notes??
         elif action == 'adAllocate':
-            # TODO: validate??
-            pass
+            assert 'start_time' in params, 'missing start time in adAllocate op'
+            # TODO: validate start_time format
         elif action == 'updateAdsSettings':
             assert len(params) > 0, 'no native ad settings provided'
             if 'enabled' in params:
@@ -170,7 +173,7 @@ class NativeAdOp:
         self._validate_ad_states()
 
     def process(self):
-        """Process a validated native ad op."""
+        """Process a validated native ad op. Assumes op is validated."""
         action = self.action
         data = {
             'post_id': self.post_id,
@@ -183,7 +186,6 @@ class NativeAdOp:
         columns = data.keys()
         values = ', '.join([":" + k for k in columns])
 
-        # Native Ads actions
         if action == 'adSubmit':
 
             if self.is_new_state:
@@ -197,15 +199,23 @@ class NativeAdOp:
                 sql = """UPDATE hive_ads_state SET %s
                            WHERE post_id = :post_id
                            AND community_id = :community_id
-                           AND account_id = :account_id"""%(
+                           AND account_id = :account_id""" %(
                                ', '.join([k +" = :"+k for k in columns])
                            )
                 DB.query(sql, **data)
+
         else:
+
             assert not self.is_new_state, (
                 'cannot perform %s operation on non-existant ad state' % action)
             if action == 'adBid':
-                pass # TODO
+                sql = """UPDATE hive_ads_state SET %s
+                           WHERE post_id = :post_id
+                           AND community_id = :community_id
+                           AND account_id = :account_id""" %(
+                               ', '.join([k +" = :"+k for k in columns])
+                           )
+                DB.query(sql, **data)
             elif action == 'adApprove':
                 pass # TODO
             elif action == 'adAllocate':
