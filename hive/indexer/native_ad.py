@@ -271,7 +271,6 @@ class NativeAdOp:
         op_bid_amount = self.params['bid_amount']
         op_time_units = self.params['time_units']
 
-        active_units = self._get_active_time_units()
         min_bid = self.ads_context['min_bid']
         min_time_bid = self.ads_context['min_time_bid']
         max_time_bid = self.ads_context['max_time_bid']
@@ -299,6 +298,7 @@ class NativeAdOp:
                 % max_time_bid)
 
         if max_time_active:
+            active_units = self._get_active_time_units()
             tot_active_units = active_units + op_time_units
             assert tot_active_units <= max_time_active, (
                 "total active time units (%d) will exceed community's maximum allowed (%d)"
