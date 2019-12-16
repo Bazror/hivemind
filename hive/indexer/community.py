@@ -306,6 +306,7 @@ class CommunityOp:
         self.props = None
 
         self.native_ad = None
+        self.na_params = None
 
     @classmethod
     def process_if_valid(cls, actor, op_json, date):
@@ -339,7 +340,7 @@ class CommunityOp:
                     self.community_id,
                     self.post_id,
                     self.account_id,
-                    {'action': self.action, 'params': read_key_dict(self.op, 'params')}
+                    {'action': self.action, 'params': self.na_params}
                 )
                 self.native_ad.validate_op()
 
@@ -484,8 +485,8 @@ class CommunityOp:
         # special validation for native ads actions
         if 'na_params' in schema:
             action = self.action
-            params = read_key_dict(self.op, 'na_params')
-            NativeAd.read_ad_schema(action, params)
+            self.na_params = read_key_dict(self.op, 'na_params')
+            NativeAd.read_ad_schema(action, self.na_params)
 
 
     def _read_community(self):

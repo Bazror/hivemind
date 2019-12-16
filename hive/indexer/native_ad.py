@@ -177,22 +177,20 @@ class NativeAdOp:
         action = self.action
         data = {
             'post_id': self.post_id,
-            'community_id': self.community_id
+            'community_id': self.community_id,
+            'account_id': self.account_id
         }
-
-        # only add account_id for ops that need it
-        if self.account_id: data['account_id'] = self.account_id
-
-        # add params to final dict
-        for k in self.params.keys(): data[k] = self.params[k]
-
-        columns = data.keys()
-        values = ', '.join([":" + k for k in columns])
+        if self.params:
+            fields = list(self.params.keys())
+            for k in self.params: data[k] = self.params[k]  # add params to final dict
 
         if action == 'adSubmit':
 
             if self.is_new_state:
                 # use INSERT op
+                columns = ', '.join(fields)
+                values = ', '.join([":" + k for k in fields])
+
                 sql = """INSERT INTO hive_ads_state
                           (%s)
                             VALUES (%s)""" % (columns, values)
@@ -203,7 +201,7 @@ class NativeAdOp:
                            WHERE post_id = :post_id
                            AND community_id = :community_id
                            AND account_id = :account_id""" %(
-                               ', '.join([k +" = :"+k for k in columns])
+                               ', '.join([k +" = :"+k for k in fields])
                            )
                 DB.query(sql, **data)
 
@@ -216,7 +214,7 @@ class NativeAdOp:
                            WHERE post_id = :post_id
                            AND community_id = :community_id
                            AND account_id = :account_id""" %(
-                               ', '.join([k +" = :"+k for k in columns])
+                               ', '.join([k +" = :"+k for k in fields])
                            )
                 DB.query(sql, **data)
             elif action == 'adApprove':
