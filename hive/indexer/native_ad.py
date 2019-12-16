@@ -184,6 +184,10 @@ class NativeAdOp:
             fields = list(self.params.keys())
             for k in self.params: data[k] = self.params[k]  # add params to final dict
 
+        sql_where = """WHERE post_id = :post_id
+                        AND community_id = :community_id
+                        AND account_id = :account_id"""
+
         if action == 'adSubmit':
 
             if self.is_new_state:
@@ -191,34 +195,40 @@ class NativeAdOp:
                 columns = ', '.join(fields)
                 values = ', '.join([":" + k for k in fields])
 
-                sql = """INSERT INTO hive_ads_state
-                          (%s)
+                sql = """INSERT INTO hive_ads_state (%s)
                             VALUES (%s)""" % (columns, values)
                 DB.query(sql, **data)
             else:
                 # use UPDATE op
+                values = ', '.join([k +" = :"+k for k in fields])
                 sql = """UPDATE hive_ads_state SET %s
-                           WHERE post_id = :post_id
-                           AND community_id = :community_id
-                           AND account_id = :account_id""" %(
-                               ', '.join([k +" = :"+k for k in fields])
-                           )
+                           %s""" %(values, sql_where)
                 DB.query(sql, **data)
 
         else:
 
             assert not self.is_new_state, (
                 'cannot perform %s operation on non-existant ad state' % action)
+
             if action == 'adBid':
-                sql = """UPDATE hive_ads_state SET %s
-                           WHERE post_id = :post_id
-                           AND community_id = :community_id
-                           AND account_id = :account_id""" %(
-                               ', '.join([k +" = :"+k for k in fields])
-                           )
+                values = ', '.join([k +" = :"+k for k in fields])
+                sql = """UPDATE hive_ads_state
+                          SET %s
+                        %s""" %(values, sql_where)
                 DB.query(sql, **data)
+
             elif action == 'adApprove':
-                pass # TODO
+                sql = """UPDATE hive_ads_state
+                          SET status = 2
+                        %s""" % sql_where
+                DB.query(sql, **data)
+
+            elif action == 'adReject':
+                sql = """UPDATE hive_ads_state
+                          SET status = 0, mod_notes = :mod_notes
+                        %s""" % sql_where
+                DB.query(sql, **data)
+
             elif action == 'adAllocate':
                 pass # TODO
             elif action == 'adReject':
