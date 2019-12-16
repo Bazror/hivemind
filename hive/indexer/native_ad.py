@@ -78,7 +78,6 @@ class NativeAd:
                 assert isinstance(ad_time, int), 'time units must be integers'
                 assert ad_time < 2147483647, (
                     'time units must be less than 2147483647')  # SQL max int
-            # check bid props
             assert 'bid_amount' in params, 'missing bid amount'
             # TODO: assert bid amount type? (float)
             assert 'bid_token' in params, 'missing bid token'
@@ -103,7 +102,7 @@ class NativeAd:
                 is_nai = is_valid_nai(params['token'])
                 if not is_nai:  # TODO: pre-smt handler
                     assert params['token'] in ['STEEM', 'SBD'], (
-                        'invalid token entered'
+                        'invalid token entered: %s' % params['token']
                     )
             if 'burn' in params:
                 assert isinstance(params['burn'], bool), (
@@ -289,15 +288,16 @@ class NativeAdOp:
                 'token not accepted as payment in community')
 
         if min_bid:
-            if op_bid_amount > 0:  # accomodate zero bids as ad withdrawal
+            if op_bid_amount > 0:  # accommodate zero bids as ad withdrawal
                 assert op_bid_amount >= min_bid, (
                     'bid amount (%d) is less than community minimum (%d)'
                     % (op_bid_amount, min_bid))
 
         if min_time_bid:
-            assert op_time_units >= min_time_bid, (
-                'the community accepts a minimum of (%d) time units per bid'
-                % min_time_bid)
+            if op_time_units > 0:  # accommodate zero time units as ad withdrawal
+                assert op_time_units >= min_time_bid, (
+                    'the community accepts a minimum of (%d) time units per bid'
+                    % min_time_bid)
 
         if max_time_bid:
             assert op_time_units <= max_time_bid, (
