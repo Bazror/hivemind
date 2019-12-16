@@ -88,6 +88,7 @@ class NativeAd:
             pass
         elif action == 'adReject':
             assert 'mod_notes' in params, 'missing moderation notes for adReject op'
+            assert isinstance(params['mod_notes'], str), 'mod notes must be a string'
             # TODO: enforce a none blank string rule for mod_notes??
         elif action == 'adAllocate':
             assert 'start_time' in params, 'missing start time in adAllocate op'
@@ -230,8 +231,6 @@ class NativeAdOp:
                 DB.query(sql, **data)
 
             elif action == 'adAllocate':
-                pass # TODO
-            elif action == 'adReject':
                 pass # TODO
 
     def _validate_ad_state(self):

@@ -613,10 +613,8 @@ class CommunityOp:
             assert actor_role > Role.muted, 'muted users cannot bid for ads'
             assert self.account == self.actor, 'can only bid ads on your own account'
         elif action == 'adApprove':
-            # TODO: assert self._ad_approved ??
             assert actor_role >= Role.mod, 'only mods can approve ads'
         elif action == 'adReject':
-            # TODO: assert not self._ad_approved ??
             assert actor_role >= Role.mod, 'only mods can reject ads'
         elif action == 'adAllocate':
             assert actor_role >= Role.mod, 'only mods can allocate time slots to ads'
