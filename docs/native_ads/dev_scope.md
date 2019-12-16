@@ -21,7 +21,7 @@ Properties for ads will be in the `native_ad` key in a post's JSON metadata.
 
 ### Community settings
 
-Adding an extra `native_ads` key in community settings to hold the following settings (JSON dictionary, preferably):
+Configurable parameters for communities:
 
 - `enabled` (boolean)
 - `token` (token symbol)
