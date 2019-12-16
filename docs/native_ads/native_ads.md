@@ -4,15 +4,16 @@
 
 ---
 
-To aid communities in shaping their attention economies, a feature to manage different types of ad spaces within a community is proposed. This will augment the built-in "promoted" posts feature, giving communities on the Steem blockchain more options to monetize.
+To aid communities in shaping their attention economies, a feature is proposed: Native Ads. It aims to enable any Steem community to monetize by selling ad space and time using STEEM or SMTs. This will augment the built-in "promoted" posts feature in social communities (on Steemit.com and other front-ends that have the full communities implementation). It will also bring a new way to monetize for single-community, special-purpose platforms, that don't have a full communities implementation.
 
 By putting ad characteristics, purchases and moderation outcomes on the blockchain, we create a transparent, verifiable and auditable environment. Hivemind will synchronize all the ad related activity and present an easy to use interface for developers to work with, the same as it does with social interactions.
 
 ## Key points to note
 
-- Promoted posts (legacy) will be optional, as will be the new native ad system
-- Communities can still feature posts, by pinning them for example. This feature is not affected.
-- Ads will use new metadata attributes and associated `custom-json` actions
+- The new native ads system will be optional
+- Ads will use new metadata attributes and associated `custom-json` operations
+- Native ads will be universally compatible, within the Steem ecosystem
+- Platforms without a full communities implementation can also integrate, by creating a community to handle Native Ads
 
 ## Ad System Design Principles
 
@@ -38,7 +39,9 @@ By making all ads decline payout and enforcing this rule in Hivemind itself, we 
 
 ### Ad creation
 
-Ads are created by making posts in a community. Posts will contain metadata that holds the ad's properties, duration (total time units), starting bid and an optional start time.
+Ads are created by making posts, that adhere to the requirements for ad posts (decline rewards, hidden). Posts will contain metadata that holds the ad's properties.
+
+When submitting an ad to a community, duration (total time units), a starting bid amount and the token type are required. Start time is optional.
 
 ### Bidding process
 
@@ -46,7 +49,7 @@ Bids are placed by the ad creator's account through custom JSON operations.
 
 A bid operation will contain metadata with:
 
-- The post ID for the ad
+- The permlink for the ad post
 - Transactional data (increase or decrease bid amount, token)
 - Duration data (time units) [optional]
 
@@ -56,7 +59,7 @@ Building dedicated user interfaces for handling the bidding process will be poss
 
 The ad lifecycle is designed as an ordered flow. Different possibilities exist at each stage, with checks and balances coded in Hivemind to enforce the workflow.
 
-**0 - Draft**: ad is not submitted to the community or was rejected [user, mod]
+**0 - Draft**: ad was rejected [mod]
 
 **1 - Submitted**: a user has submitted it for review [user]
 
