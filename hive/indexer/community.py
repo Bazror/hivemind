@@ -34,7 +34,7 @@ TYPE_COUNCIL = 3
 START_BLOCK = 37500000
 START_DATE = '2019-10-22T07:12:36' # effectively 2019-10-22 12:00:00
 
-NATIVE_AD_ACTIONS = ['adSubmit', 'adBid', 'adApprove', 'adAllocate', 'adReject']
+NATIVE_AD_ACTIONS = ['adSubmit', 'adBid', 'adWithdraw', 'adApprove', 'adAllocate', 'adReject']
 
 # https://en.wikipedia.org/wiki/ISO_639-1
 LANGS = ("ab,aa,af,ak,sq,am,ar,an,hy,as,av,ae,ay,az,bm,ba,eu,be,bn,bh,bi,"
@@ -273,6 +273,7 @@ class CommunityOp:
         'unsubscribe':          ['community'],
         'adSubmit':             ['community', 'account', 'permlink', 'na_params'],
         'adBid':                ['community', 'account', 'permlink', 'na_params'],
+        'adWithdraw':           ['community', 'account', 'permlink'],
         'adApprove':            ['community', 'account', 'permlink'],
         'adAllocate':           ['community', 'account', 'permlink', 'na_params'],
         'adReject':             ['community', 'account', 'permlink', 'na_params'],
@@ -612,6 +613,8 @@ class CommunityOp:
         elif action == 'adBid':
             assert actor_role > Role.muted, 'muted users cannot bid for ads'
             assert self.account == self.actor, 'can only bid ads on your own account'
+        elif action == 'adWithdraw':
+            assert self.account == self.actor, 'can only withdraw ads on your own account'
         elif action == 'adApprove':
             assert actor_role >= Role.mod, 'only mods can approve ads'
         elif action == 'adReject':

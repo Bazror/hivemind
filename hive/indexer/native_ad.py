@@ -213,20 +213,25 @@ class NativeAdOp:
             if action == 'adBid':
                 values = ', '.join([k +" = :"+k for k in fields])
                 sql = """UPDATE hive_ads_state
-                          SET %s
-                        %s""" %(values, sql_where)
+                            SET %s
+                          %s""" %(values, sql_where)
                 DB.query(sql, **data)
+
+            elif action == 'adWithdraw':
+                sql = """UPDATE hive_ads_state
+                            SET status = 0
+                          %s""" % sql_where
 
             elif action == 'adApprove':
                 sql = """UPDATE hive_ads_state
-                          SET status = 2
-                        %s""" % sql_where
+                            SET status = 2
+                          %s""" % sql_where
                 DB.query(sql, **data)
 
             elif action == 'adReject':
                 sql = """UPDATE hive_ads_state
-                          SET status = 0, mod_notes = :mod_notes
-                        %s""" % sql_where
+                            SET status = 0, mod_notes = :mod_notes
+                          %s""" % sql_where
                 DB.query(sql, **data)
 
             elif action == 'adAllocate':
@@ -249,6 +254,11 @@ class NativeAdOp:
             'ad not yet submitted to community; cannot perform %s op' % action)
         if action == 'adBid':
             assert ad_status == Status.submitted, 'can only bid for ads that are pending review'
+        elif action == 'adWithdraw':
+            assert ad_status in [Status.submitted, Status.approved], (
+                "can only withdraw submitted or approved ads, not '%s' ads"
+                % Status(ad_status).name
+            )
         elif action == 'adApprove':
             assert ad_status == Status.submitted, 'can only approve ads that are pending review'
         elif action == 'adReject':
@@ -275,7 +285,9 @@ class NativeAdOp:
         """Check if bid token, amount and time units respect community's preferences."""
 
         op_bid_amount = self.params['bid_amount']
+        assert op_bid_amount > 0, 'bid amount must be greater than zero (0)'
         op_time_units = self.params['time_units']
+        assert op_time_units > 0, 'time units must be greater than zero (0)'
 
         min_bid = self.ads_context['min_bid']
         min_time_bid = self.ads_context['min_time_bid']
@@ -288,16 +300,14 @@ class NativeAdOp:
                 'token not accepted as payment in community')
 
         if min_bid:
-            if op_bid_amount > 0:  # accommodate zero bids as ad withdrawal
-                assert op_bid_amount >= min_bid, (
-                    'bid amount (%d) is less than community minimum (%d)'
-                    % (op_bid_amount, min_bid))
+            assert op_bid_amount >= min_bid, (
+                'bid amount (%d) is less than community minimum (%d)'
+                % (op_bid_amount, min_bid))
 
         if min_time_bid:
-            if op_time_units > 0:  # accommodate zero time units as ad withdrawal
-                assert op_time_units >= min_time_bid, (
-                    'the community accepts a minimum of (%d) time units per bid'
-                    % min_time_bid)
+            assert op_time_units >= min_time_bid, (
+                'the community accepts a minimum of (%d) time units per bid'
+                % min_time_bid)
 
         if max_time_bid:
             assert op_time_units <= max_time_bid, (
