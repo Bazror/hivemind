@@ -5,7 +5,12 @@
 import json
 from enum import IntEnum
 from hive.db.adapter import Db
+from hive.indexer.accounts import Accounts
+from hive.indexer.community import Community
+from hive.indexer.posts import Posts
+from hive.indexer.notify import Notify
 from hive.utils.normalize import is_valid_nai
+from hive.utils.normalize import parse_amount
 
 DB = Db.instance()
 
@@ -123,7 +128,7 @@ class NativeAd:
             if 'token' in params:
                 # TODO: check if nai is in registry??
                 is_nai = is_valid_nai(params['token'])
-                if not is_nai:  # TODO: pre-smt handler
+                if not is_nai:  # TODO: remove pre-smt handler below
                     assert params['token'] in ['STEEM', 'SBD'], (
                         'invalid token entered: %s' % params['token']
                     )
@@ -147,6 +152,47 @@ class NativeAd:
                 assert isinstance(params['max_time_active', int]), (
                     'maximum active time units per account must be an integer'
                 )
+
+    @classmethod
+    def check_ad_payment(cls, op, date):
+        """Triggers an adFund operation for validated Native Ads transfers."""
+        memo = op['memo']
+        payment = cls._valid_payment(memo)
+
+        if payment:
+            amount, token = parse_amount(op['amount'])
+            params = {'amount': amount, 'token': token}
+
+            _account_id = Accounts.get_id(op['from'])
+            _post_id = Posts.get_id(op[['from']], payment['permlink'])
+            _community_id = Community.get_id(payment['community'])
+
+            ad_op = NativeAdOp(
+                _community_id,
+                _post_id,
+                _account_id,
+                {'action': 'adFund',
+                 'params': params}
+            )
+            try:
+                ad_op.validate_op()
+                ad_op.process()
+            except AssertionError as e:
+                payload = str(e)
+                Notify('error', dst_id=_account_id,
+                       when=date, payload=payload).write()
+        else:
+            pass # TODO: investigate possible notification for invalid payment
+
+    @staticmethod
+    def _valid_payment(ref):
+        """Checks for valid community and ad permlink pairing."""
+        if ref.count('/') == 1:
+            _values = ref.split('/')
+            comm = _values[0]
+            link = _values[1]
+            return {'community': comm, 'permlink': link}
+        return None
 
 
 class NativeAdOp:
