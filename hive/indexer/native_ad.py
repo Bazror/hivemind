@@ -44,6 +44,29 @@ class NativeAd:
 
         return None
 
+    @staticmethod
+    def _check_ad_metadata(data):
+        if 'native_ad' in data:
+            # check ad metadata integrity (mandatory fields)
+            ad_metadata = data['native_ad']
+            fields = ['type', 'properties']
+            for k in fields:
+                if k not in ad_metadata: return None
+            # validate all internal data
+            if len(ad_metadata['type']) <= 16:
+                ad_props = ad_metadata['properties']
+                if isinstance(ad_props, dict):   # properties must be in a dict
+                    return ad_metadata
+        return None
+
+    @classmethod
+    def _insert(cls, values):
+        return DB.build_insert('hive_ads', values, pk='post_id')
+
+    @classmethod
+    def _update(cls, values):
+        return DB.build_update('hive_ads', values, pk='post_id')
+
     @classmethod
     def get_ad_status(cls, post_id, community_id=None):
         """Returns a list of the current status codes of ad within all communities.
@@ -125,28 +148,6 @@ class NativeAd:
                     'maximum active time units per account must be an integer'
                 )
 
-    @classmethod
-    def _insert(cls, values):
-        return DB.build_insert('hive_ads', values, pk='post_id')
-
-    @classmethod
-    def _update(cls, values):
-        return DB.build_update('hive_ads', values, pk='post_id')
-
-    @staticmethod
-    def _check_ad_metadata(data):
-        if 'native_ad' in data:
-            # check ad metadata integrity (mandatory fields)
-            ad_metadata = data['native_ad']
-            fields = ['type', 'properties']
-            for k in fields:
-                if k not in ad_metadata: return None
-            # validate all internal data
-            if len(ad_metadata['type']) <= 16:
-                ad_props = ad_metadata['properties']
-                if isinstance(ad_props, dict):   # properties must be in a dict
-                    return ad_metadata
-        return None
 
 class NativeAdOp:
     """Handles native ad operations. When initializing, pass `ad_action`
