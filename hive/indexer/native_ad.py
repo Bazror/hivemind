@@ -3,11 +3,10 @@
 #pylint: disable=too-many-lines
 
 import json
+import re
 from enum import IntEnum
 from hive.db.adapter import Db
-from hive.indexer.accounts import Accounts
-from hive.indexer.community import Community
-from hive.indexer.posts import Posts
+
 from hive.indexer.notify import Notify
 from hive.utils.normalize import is_valid_nai
 from hive.utils.normalize import parse_amount
@@ -24,6 +23,10 @@ class Status(IntEnum):
 
 class NativeAd:
     """Hosts validation and commmon methods for native ads."""
+
+    # one block history of ops
+    _block_hist = {}
+
 
     @classmethod
     def process_ad(cls, values, new=True):
@@ -154,7 +157,7 @@ class NativeAd:
                 )
 
     @classmethod
-    def check_ad_payment(cls, op, date):
+    def check_ad_payment(cls, op, date, num):
         """Triggers an adFund operation for validated Native Ads transfers."""
         memo = op['memo']
         payment = cls._valid_payment(memo)
@@ -162,9 +165,11 @@ class NativeAd:
         if payment:
             amount, token = parse_amount(op['amount'])
             params = {'amount': amount, 'token': token}
-
+            from hive.indexer.accounts import Accounts
+            from hive.indexer.community import Community
+            from hive.indexer.posts import Posts
             _account_id = Accounts.get_id(op['from'])
-            _post_id = Posts.get_id(op[['from']], payment['permlink'])
+            _post_id = Posts.get_id(op['from'], payment['permlink'])
             _community_id = Community.get_id(payment['community'])
 
             ad_op = NativeAdOp(
@@ -172,7 +177,8 @@ class NativeAd:
                 _post_id,
                 _account_id,
                 {'action': 'adFund',
-                 'params': params}
+                 'params': params},
+                num
             )
             try:
                 ad_op.validate_op()
@@ -184,15 +190,63 @@ class NativeAd:
         else:
             pass # TODO: investigate possible notification for invalid payment
 
-    @staticmethod
-    def _valid_payment(ref):
+    @classmethod
+    def _valid_payment(cls, ref):
         """Checks for valid community and ad permlink pairing."""
+        # TODO : investigate alternative memo protocol
         if ref.count('/') == 1:
             _values = ref.split('/')
             comm = _values[0]
             link = _values[1]
-            return {'community': comm, 'permlink': link}
+            if cls._is_valid_comm(comm):
+                return {'community': comm, 'permlink': link}
         return None
+
+    @staticmethod
+    def _is_valid_comm(name):
+        if (name[:5] == 'hive-'
+                and name[5] in ['1', '2', '3']
+                and re.match(r'^hive-[123]\d{4,6}$', name)):
+            return True
+        return False
+
+    @classmethod
+    def update_block_hist(cls, num, community_id, account_id, post_id, action):
+        """Maintains a current block history of all native ad ops, to resolve conflicts."""
+        if num in cls._block_hist:
+            _buffer = cls._block_hist[num]
+        else:
+            if len(cls._block_hist) > 0:
+                # clear previous block from mem
+                cls._block_hist.clear()
+            _buffer = []
+
+        _buffer.append(
+            {
+                'community_id': community_id,
+                'account_id': account_id,
+                'post_id': post_id,
+                'action': action
+            }
+        )
+
+        cls._block_hist[num] = _buffer
+
+    @classmethod
+    def check_block_hist(cls, num, community_id, account_id, post_id, action):
+        """Check for a matching native ad op in block history."""
+        _ref = {
+            'community_id': community_id,
+            'account_id': account_id,
+            'post_id': post_id,
+            'action': action
+        }
+        if num in cls._block_hist:
+            hist = cls._block_hist[num]
+            for entry in hist:
+                if entry == _ref:
+                    return True
+        return False
 
 
 class NativeAdOp:
@@ -203,8 +257,9 @@ class NativeAdOp:
             'params': params
         }"""
 
-    def __init__(self, community_id, post_id, account_id, ad_action):
-        """Inits a native ad object and loads initial state."""
+    def __init__(self, community_id, post_id, account_id, ad_action, block_num):
+        """Inits a native ad op object and loads initial state."""
+        self.block_num = block_num
         self.community_id = community_id
         self.post_id = post_id
         self.account_id = account_id
@@ -213,6 +268,7 @@ class NativeAdOp:
         self.ad_state = None
         self.ads_context = self._get_ads_context()
         self.is_new_state = False
+        self.override_reject = False
 
     def validate_op(self):
         """Validate the native ad op."""
@@ -221,6 +277,7 @@ class NativeAdOp:
 
     def process(self):
         """Process a validated native ad op. Assumes op is validated."""
+        # TODO: notify after DB updates
         action = self.action
         data = {
             'post_id': self.post_id,
@@ -269,6 +326,20 @@ class NativeAdOp:
                             SET status = 0
                           %s""" % sql_where
 
+            elif action == 'adFund':
+                # check if scheduled
+                if self.ad_state['start_time']:
+                    set_values = 'SET status = 4'
+                else:
+                    set_values = 'SET status = 3'
+
+                if self.override_reject:
+                    set_values += ", mod_notes = ''"
+
+                sql = """UPDATE hive_ads_state
+                            %s
+                          %s""" %(set_values, sql_where)
+
             elif action == 'adApprove':
                 sql = """UPDATE hive_ads_state
                             SET status = 2
@@ -283,6 +354,15 @@ class NativeAdOp:
 
             elif action == 'adAllocate':
                 pass # TODO
+
+        # success; update block history
+        NativeAd.update_block_hist(
+            self.block_num,
+            self.community_id,
+            self.account_id,
+            self.post_id,
+            self.action
+        )
 
     def _validate_ad_state(self):
         action = self.action
@@ -299,6 +379,7 @@ class NativeAdOp:
 
         assert self.ad_state, (
             'ad not yet submitted to community; cannot perform %s op' % action)
+
         if action == 'adBid':
             assert ad_status == Status.submitted, 'can only bid for ads that are pending review'
         elif action == 'adWithdraw':
@@ -306,6 +387,25 @@ class NativeAdOp:
                 "can only withdraw submitted or approved ads, not '%s' ads"
                 % Status(ad_status).name
             )
+        elif action == 'adFund':
+            conflict_rej = NativeAd.check_block_hist(
+                self.block_num,
+                self.community_id,
+                self.account_id,
+                self.post_id,
+                'adReject'
+            )
+            if conflict_rej and ad_status == Status.draft:
+                # override adReject op
+                # TODO: notify mod, flag for mod_notes removal
+                self.override_reject = True
+            else:
+                # proceed with normal validation
+                assert ad_status == Status.approved, (
+                    "you have funded an ad with status '%s'; consider "
+                    "contacting the community management to resolve this") % Status(ad_status).name
+
+
         elif action == 'adApprove':
             assert ad_status == Status.submitted, 'can only approve ads that are pending review'
         elif action == 'adReject':
@@ -314,15 +414,19 @@ class NativeAdOp:
             # TODO: maybe start_time < x mins away?? for corrections/reallocations
             assert ad_status == Status.funded and self.ad_state['start_time'] is None, (
                 "can only allocate time to a funded ad that doesn't have a start time set")
+        elif action == 'updateAdsSettings':
+            pass # TODO: check no active/approved ads for community, if disabling native ads
+
 
     def _validate_ad_compliance(self):
         """Check if operation complies with community level ad settings"""
 
         self.ads_context = self._get_ads_context()
-        accepts_ads = self.ads_context['enabled']
-        assert accepts_ads, 'community does not accept ads'
-
         action = self.action
+
+        if action != 'updateAdsSettings':  # bypass check when updating settings
+            accepts_ads = self.ads_context['enabled']
+            assert accepts_ads, 'community does not accept ads'
 
         if action == 'adSubmit' or action == 'adBid':
             self._check_bid()
