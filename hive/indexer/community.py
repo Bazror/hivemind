@@ -55,9 +55,9 @@ def assert_keys_match(keys, expected, allow_missing=True):
     extra = keys - expected
     assert not extra, 'extraneous keys: %s' % extra
 
-def process_json_community_op(actor, op_json, date):
+def process_json_community_op(actor, op_json, date, block_num):
     """Validates community op and apply state changes to db."""
-    CommunityOp.process_if_valid(actor, op_json, date)
+    CommunityOp.process_if_valid(actor, op_json, date, block_num)
 
 def read_key_bool(op, key):
     """Reads a key from dict, ensuring valid bool if present."""
@@ -280,9 +280,10 @@ class CommunityOp:
         'updateAdsSettings':    ['community', 'na_params']
     }
 
-    def __init__(self, actor, date):
+    def __init__(self, actor, date, block_num):
         """Inits a community op for validation and processing."""
         self.date = date
+        self.block_num = block_num
         self.valid = False
         self.action = None
         self.op = None
@@ -310,9 +311,9 @@ class CommunityOp:
         self.na_params = None
 
     @classmethod
-    def process_if_valid(cls, actor, op_json, date):
+    def process_if_valid(cls, actor, op_json, date, block_num):
         """Helper to instantiate, validate, process an op."""
-        op = CommunityOp(actor, date)
+        op = CommunityOp(actor, date, block_num)
         if op.validate(op_json):
             op.process()
             return True
@@ -341,7 +342,8 @@ class CommunityOp:
                     self.community_id,
                     self.post_id,
                     self.account_id,
-                    {'action': self.action, 'params': self.na_params}
+                    {'action': self.action, 'params': self.na_params},
+                    self.block_num
                 )
                 self.native_ad.validate_op()
 
