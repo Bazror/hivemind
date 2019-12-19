@@ -22,7 +22,7 @@ class Payments:
     @classmethod
     def op_transfer(cls, op, tx_idx, num, date):
         """Process raw transfer op; apply balance if valid post promote."""
-        NativeAd.check_ad_payment(op, date)
+        NativeAd.check_ad_payment(op, date, num)
         record = cls._validated(op, tx_idx, num, date)
         if not record:
             return
