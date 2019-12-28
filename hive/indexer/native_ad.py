@@ -221,24 +221,25 @@ class NativeAd:
                 payload = str(e)
                 Notify('error', dst_id=_account_id,
                        when=date, payload=payload).write()
-        else:
-            pass # TODO: investigate possible notification for invalid payment
 
     @classmethod
-    def _valid_payment(cls, ref):
-        """Checks for valid community and ad permlink pairing."""
-        # TODO : investigate alternative memo protocol
-        if ref.count('/') == 1:
+    def _valid_payment(cls, memo):
+        """Checks for valid ad payment memo. Example memo:
+            `hna:hive-133333/interesting-promo`"""
+        if memo[:4] == "hna:":
+            ref = memo[4:].strip()  # strip() to avoid invalidating legitimate payments
+            assert ref.count('/') == 1, (
+                "invalid ad payment memo; found (%d) / characters instead of 1" % ref.count)
             _values = ref.split('/')
-            comm = _values[0]
-            link = _values[1]
+            comm = _values[0].strip()
+            link = _values[1].strip()
             from hive.indexer.community import Community
             valid_comm = Community.validated_name(comm)
-            if valid_comm:
-                return {
-                    'community_id': Community.get_id(comm),
-                    'permlink': link
-                }
+            assert valid_comm, 'invalid community name entered (%s)' % comm
+            return {
+                'community_id': Community.get_id(comm),
+                'permlink': link
+            }
         return None
 
 
