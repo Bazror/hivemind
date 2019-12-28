@@ -3,7 +3,6 @@
 #pylint: disable=too-many-lines
 
 import json
-import re
 from enum import IntEnum
 from hive.db.adapter import Db
 
@@ -166,11 +165,10 @@ class NativeAd:
             amount, token = parse_amount(op['amount'])
             params = {'amount': amount, 'token': token}
             from hive.indexer.accounts import Accounts
-            from hive.indexer.community import Community
             from hive.indexer.posts import Posts
             _account_id = Accounts.get_id(op['from'])
             _post_id = Posts.get_id(op['from'], payment['permlink'])
-            _community_id = Community.get_id(payment['community'])
+            _community_id = payment['community_id']
 
             ad_op = NativeAdOp(
                 _community_id,
@@ -198,17 +196,15 @@ class NativeAd:
             _values = ref.split('/')
             comm = _values[0]
             link = _values[1]
-            if cls._is_valid_comm(comm):
-                return {'community': comm, 'permlink': link}
+            from hive.indexer.community import Community
+            valid_comm = Community.validated_name(comm)
+            if valid_comm:
+                return {
+                    'community_id': Community.get_id(comm),
+                    'permlink': link
+                }
         return None
 
-    @staticmethod
-    def _is_valid_comm(name):
-        if (name[:5] == 'hive-'
-                and name[5] in ['1', '2', '3']
-                and re.match(r'^hive-[123]\d{4,6}$', name)):
-            return True
-        return False
 
     @classmethod
     def update_block_hist(cls, num, community_id, account_id, post_id, action):
