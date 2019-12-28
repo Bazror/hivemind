@@ -116,13 +116,12 @@ class NativeAd:
         elif action == 'adApprove':
             if 'start_time' in params:
                 valid_date(params['start_time'])
+            assert 'mod_notes' in params, 'missing moderation notes for adApprove op'
+            assert isinstance(params['mod_notes'], str), 'mod notes must be a string'
         elif action == 'adReject':
             assert 'mod_notes' in params, 'missing moderation notes for adReject op'
             assert isinstance(params['mod_notes'], str), 'mod notes must be a string'
             # TODO: enforce a none blank string rule for mod_notes??
-        elif action == 'adAllocate':
-            assert 'start_time' in params, 'missing start time in adAllocate op'
-            # TODO: validate start_time format
         elif action == 'updateAdsSettings':
             assert len(params) > 0, 'no native ad settings provided'
             if 'enabled' in params:
@@ -339,9 +338,10 @@ class NativeAdOp:
                           %s""" %(set_values, sql_where)
 
             elif action == 'adApprove':
+                values = 'status = 2, '.join([k +" = :"+k for k in fields])
                 sql = """UPDATE hive_ads_state
-                            SET status = 2
-                          %s""" % sql_where
+                            SET %s
+                          %s""" % (values, sql_where)
                 DB.query(sql, **data)
 
             elif action == 'adReject':
@@ -349,9 +349,6 @@ class NativeAdOp:
                             SET status = 0, mod_notes = :mod_notes
                           %s""" % sql_where
                 DB.query(sql, **data)
-
-            elif action == 'adAllocate':
-                pass # TODO
 
         # success; update block history
         NativeAd.update_block_hist(
@@ -410,14 +407,18 @@ class NativeAdOp:
             # TODO: don't approve unscheduled ads that don't have a start_time provided
             # TODO: avoid overwrite of customer's start by mod's start_time
             assert ad_status == Status.submitted, 'can only approve ads that are pending review'
+            if self.ad_state['start_time']:
+                assert 'start_time' not in self.params, (
+                    "ad already has a start_time; cannot overwrite a customer's start_time"
+                )
+            else:
+                assert 'start_time' in self.params, (
+                    'no start_time provided for unscheduled ad'
+                )
         elif action == 'adReject':
             # put provision for rejecting a timed out ad, if not timed-out then proceed
             # TODO: check conflict_adfund op, ignore rej op if found, else proceed as usual
             assert ad_status == Status.submitted, 'can only reject ads that are pending review'
-        elif action == 'adAllocate':
-            # TODO: maybe start_time < x mins away?? for corrections/reallocations
-            assert ad_status == Status.funded and self.ad_state['start_time'] is None, (
-                "can only allocate time to a funded ad that doesn't have a start time set")
         elif action == 'updateAdsSettings':
             pass # TODO: check no active/approved ads for community, if disabling native ads
 

@@ -34,7 +34,7 @@ TYPE_COUNCIL = 3
 START_BLOCK = 37500000
 START_DATE = '2019-10-22T07:12:36' # effectively 2019-10-22 12:00:00
 
-NATIVE_AD_ACTIONS = ['adSubmit', 'adBid', 'adWithdraw', 'adApprove', 'adAllocate', 'adReject']
+NATIVE_AD_ACTIONS = ['adSubmit', 'adBid', 'adWithdraw', 'adApprove', 'adReject']
 
 # https://en.wikipedia.org/wiki/ISO_639-1
 LANGS = ("ab,aa,af,ak,sq,am,ar,an,hy,as,av,ae,ay,az,bm,ba,eu,be,bn,bh,bi,"
@@ -274,8 +274,7 @@ class CommunityOp:
         'adSubmit':             ['community', 'account', 'permlink', 'na_params'],
         'adBid':                ['community', 'account', 'permlink', 'na_params'],
         'adWithdraw':           ['community', 'account', 'permlink'],
-        'adApprove':            ['community', 'account', 'permlink'],
-        'adAllocate':           ['community', 'account', 'permlink', 'na_params'],
+        'adApprove':            ['community', 'account', 'permlink', 'na_params'],
         'adReject':             ['community', 'account', 'permlink', 'na_params'],
         'updateAdsSettings':    ['community', 'na_params']
     }
@@ -621,8 +620,6 @@ class CommunityOp:
             assert actor_role >= Role.mod, 'only mods can approve ads'
         elif action == 'adReject':
             assert actor_role >= Role.mod, 'only mods can reject ads'
-        elif action == 'adAllocate':
-            assert actor_role >= Role.mod, 'only mods can allocate time slots to ads'
         elif action == 'updateAdsSettings':
             assert actor_role >= Role.admin, 'only admins can change ad settings'
 

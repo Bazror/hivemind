@@ -40,7 +40,6 @@ The following `custom_json` operations will need to be implemented.
 **Moderators**
 
 - `adApprove`
-- `adAllocate`
 - `adReject`
 
 **Users**
