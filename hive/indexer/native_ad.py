@@ -100,10 +100,11 @@ class NativeAd:
     def read_ad_schema(cls, action, params):
         """Validates schema for given native ad operations."""
         if action == 'adSubmit' or action == 'adBid':
+            if 'start_time' in params:
+                pass # TODO: validate format
             if action == 'adSubmit':
                 # time units are compulsory for adSubmit ops
                 assert 'time_units' in params, 'missing time units'
-                # TODO: validate start_time format
             if 'time_units' in params:
                 ad_time = params['time_units']
                 assert isinstance(ad_time, int), 'time units must be integers'
@@ -112,9 +113,8 @@ class NativeAd:
             assert 'bid_amount' in params, 'missing bid amount'
             # TODO: assert bid amount type? (float)
             assert 'bid_token' in params, 'missing bid token'
-            # TODO: assert valid token?
         elif action == 'adApprove':
-            # TODO: validate??
+            # TODO: check for start_time and validate format if present
             pass
         elif action == 'adReject':
             assert 'mod_notes' in params, 'missing moderation notes for adReject op'
@@ -274,6 +274,7 @@ class NativeAdOp:
         """Validate the native ad op."""
         self._validate_ad_state()
         self._validate_ad_compliance()
+        self._validate_time_ranges()
 
     def process(self):
         """Process a validated native ad op. Assumes op is validated."""
@@ -312,7 +313,7 @@ class NativeAdOp:
         else:
 
             assert not self.is_new_state, (
-                'cannot perform %s operation on non-existant ad state' % action)
+                'ad must be submitted to community first, to perform %s operation' % action)
 
             if action == 'adBid':
                 values = ', '.join([k +" = :"+k for k in fields])
@@ -365,6 +366,8 @@ class NativeAdOp:
         )
 
     def _validate_ad_state(self):
+        """Checks the operation against the rules permitted for the ad's current state."""
+
         action = self.action
         self.ad_state = self._get_ad_state()
 
@@ -407,8 +410,12 @@ class NativeAdOp:
 
 
         elif action == 'adApprove':
+            # TODO: don't approve unscheduled ads that don't have a start_time provided
+            # TODO: avoid overwrite of customer's start by mod's start_time
             assert ad_status == Status.submitted, 'can only approve ads that are pending review'
         elif action == 'adReject':
+            # put provision for rejecting a timed out ad, if not timed-out then proceed
+            # TODO: check conflict_adfund op, ignore rej op if found, else proceed as usual
             assert ad_status == Status.submitted, 'can only reject ads that are pending review'
         elif action == 'adAllocate':
             # TODO: maybe start_time < x mins away?? for corrections/reallocations
@@ -431,6 +438,46 @@ class NativeAdOp:
         if action == 'adSubmit' or action == 'adBid':
             self._check_bid()
 
+        if action == 'adFund':
+            pass # TODO: check late payment, if timed-out reject op and advise management contact
+
+    def _validate_time_ranges(self):
+        """Checks adApprove ops for time slots that overlap with existing approved ads."""
+
+        action = self.action
+
+        if action != 'adApprove':
+            return
+        time_units = None
+        start_time = None
+
+        assert self.ad_state['time_units'], (
+            "cannot approve an ad that doesn't have time_units specified")
+        time_units = self.ad_state['time_units']
+
+        if 'start_time' in self.params:
+            start_time = self.params['start_time']
+        else:
+            assert self.ad_state['start_time'], (
+                "cannot approve an ad that doesn't have start_time specified"
+            )
+            start_time = self.ad_state['start_time']
+
+        sql = """SELECT 1 FROM hive_ads_state
+                    WHERE community_id = :community_id
+                    AND status > 1
+                    AND tsrange(start_time, start_time
+                        + (time_units * interval '1 minute'), '[]')
+                    && tsrange(:start_time, :start_time
+                        + (:time_units * interval '1 minute'), '[]')"""
+
+        found = bool(DB.query_one(
+            sql,
+            community_id=self.community_id,
+            start_time=start_time,
+            time_units=time_units))
+
+        assert not found, 'time slot not available'
 
     def _check_bid(self):
         """Check if bid token, amount and time units respect community's preferences."""

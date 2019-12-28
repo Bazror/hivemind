@@ -77,8 +77,7 @@ The `hive_ads_state` table maintains the state of ads in various communities
     start_time timestamp,
     status smallint NOT NULL DEFAULT 0,
     mod_notes varchar(500) DEFAULT '',
-    UNIQUE (post_id, community_id),
-    EXCLUDE USING gist (community_id WITH =, tsrange(start_time, start_time + (time_units * interval '1 minute'))WITH &&)
+    UNIQUE (post_id, community_id)
 
 ```
 

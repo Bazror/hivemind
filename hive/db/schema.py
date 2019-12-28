@@ -350,7 +350,6 @@ def build_metadata_ads(metadata=None):
         sa.ForeignKeyConstraint(['post_id'], ['hive_ads.post_id'], name='hive_ads_state_fk1'),
         sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_state_fk2'),
         sa.UniqueConstraint('post_id', 'community_id', name='hive_ads_state_ux1'),
-        # TODO: ExcludeConstraint check dev_scope.md/#hive_ads_state
         # TODO: indexes ??
     )
 
