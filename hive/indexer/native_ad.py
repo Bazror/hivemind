@@ -202,8 +202,11 @@ class NativeAd:
             params = {'amount': amount, 'token': token}
             from hive.indexer.accounts import Accounts
             from hive.indexer.posts import Posts
-            _account_id = Accounts.get_id(op['from'])
+
             _post_id = Posts.get_id(op['from'], payment['permlink'])
+            assert _post_id, 'post not found: @%s/%s' % (op['from'], payment['permlink'])
+
+            _account_id = Accounts.get_id(op['from'])
             _community_id = payment['community_id']
 
             ad_op = NativeAdOp(
@@ -233,11 +236,16 @@ class NativeAd:
             _values = ref.split('/')
             comm = _values[0].strip()
             link = _values[1].strip()
+
             from hive.indexer.community import Community
             valid_comm = Community.validated_name(comm)
             assert valid_comm, 'invalid community name entered (%s)' % comm
+
+            comm_id = Community.get_id(comm)
+            assert comm_id, 'community not found: %s' % comm
+
             return {
-                'community_id': Community.get_id(comm),
+                'community_id': comm_id,
                 'permlink': link
             }
         return None
