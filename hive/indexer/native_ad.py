@@ -9,6 +9,7 @@ from hive.db.adapter import Db
 from hive.indexer.notify import Notify
 from hive.utils.normalize import is_valid_nai
 from hive.utils.normalize import parse_amount
+from hive.utils.json import valid_date
 
 DB = Db.instance()
 
@@ -100,7 +101,7 @@ class NativeAd:
         """Validates schema for given native ad operations."""
         if action == 'adSubmit' or action == 'adBid':
             if 'start_time' in params:
-                pass # TODO: validate format
+                valid_date(params['start_time'])
             if action == 'adSubmit':
                 # time units are compulsory for adSubmit ops
                 assert 'time_units' in params, 'missing time units'
@@ -113,8 +114,8 @@ class NativeAd:
             # TODO: assert bid amount type? (float)
             assert 'bid_token' in params, 'missing bid token'
         elif action == 'adApprove':
-            # TODO: check for start_time and validate format if present
-            pass
+            if 'start_time' in params:
+                valid_date(params['start_time'])
         elif action == 'adReject':
             assert 'mod_notes' in params, 'missing moderation notes for adReject op'
             assert isinstance(params['mod_notes'], str), 'mod notes must be a string'
