@@ -416,9 +416,10 @@ class NativeAdOp:
                     'no start_time provided for unscheduled ad'
                 )
         elif action == 'adReject':
-            # put provision for rejecting a timed out ad, if not timed-out then proceed
             # TODO: check conflict_adfund op, ignore rej op if found, else proceed as usual
-            assert ad_status == Status.submitted, 'can only reject ads that are pending review'
+            ad_timed_out = self._check_ad_timeout()
+            if not ad_timed_out:
+                assert ad_status == Status.submitted, 'can only reject ads that are pending review'
         elif action == 'updateAdsSettings':
             pass # TODO: check no active/approved ads for community, if disabling native ads
 
@@ -516,6 +517,9 @@ class NativeAdOp:
             assert tot_active_units <= max_time_active, (
                 "total active time units (%d) will exceed community's maximum allowed (%d)"
                 % (tot_active_units, max_time_active))
+
+    def _check_ad_timeout(self):
+        return False # TODO: check start time vs current time (mind TZ)
 
     def _has_ads_settings(self):
         """Check if current community has settings entry."""
