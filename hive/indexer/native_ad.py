@@ -23,6 +23,15 @@ ALLOWED_KEYS = {
                           'min_time_bid', 'max_time_bid', 'max_time_active']
 }
 
+REQUIRED_KEYS = {
+    'adSubmit': ['time_units', 'bid_amount', 'bid_token'],
+    'adBid': ['bid_amount', 'bid_token'],
+    'adApprove': ['mod_notes'],
+    'adReject': ['mod_notes'],
+    'adFund': ['amount', 'token'],
+    'updateAdsSettings': []
+}
+
 class Status(IntEnum):
     """Labels for ad status."""
     draft = 0
@@ -109,6 +118,7 @@ class NativeAd:
     @classmethod
     def read_ad_schema(cls, action, params):
         """Validates schema for given native ad operations."""
+        cls.check_required_keys(action, params.keys())
         cls.check_allowed_keys(action, params.keys())
         if action == 'adSubmit' or action == 'adBid':
             if 'start_time' in params:
@@ -176,6 +186,17 @@ class NativeAd:
         assert len(unsupported) == 0, (
             'unsupported keys provided for %s op: %s' % (action, unsupported))
 
+    @classmethod
+    def check_required_keys(cls, action, provided_keys):
+        """Check if all required keys are present."""
+        required = REQUIRED_KEYS[action]
+        missing = []
+        for k in required:
+            if k not in provided_keys:
+                missing.append(k)
+        assert len(missing) == 0, (
+            'missing keys for %s op: %s' % (action, missing)
+        )
 
     @classmethod
     def check_ad_payment(cls, op, date, num):
