@@ -13,6 +13,16 @@ from hive.utils.json import valid_date
 
 DB = Db.instance()
 
+ALLOWED_KEYS = {
+    'adSubmit': ['time_units', 'start_time', 'bid_amount', 'bid_token'],
+    'adBid': ['time_units', 'start_time', 'bid_amount', 'bid_token'],
+    'adApprove': ['start_time', 'mod_notes'],
+    'adReject': ['mod_notes'],
+    'adFund': ['amount', 'token'],
+    'updateAdsSettings': ['enabled', 'token', 'burn', 'min_bid',
+                          'min_time_bid', 'max_time_bid', 'max_time_active']
+}
+
 class Status(IntEnum):
     """Labels for ad status."""
     draft = 0
@@ -99,6 +109,7 @@ class NativeAd:
     @classmethod
     def read_ad_schema(cls, action, params):
         """Validates schema for given native ad operations."""
+        cls.check_allowed_keys(action, params.keys())
         if action == 'adSubmit' or action == 'adBid':
             if 'start_time' in params:
                 valid_date(params['start_time'])
@@ -154,6 +165,17 @@ class NativeAd:
                 assert isinstance(params['max_time_active', int]), (
                     'maximum active time units per account must be an integer'
                 )
+    @classmethod
+    def check_allowed_keys(cls, action, provided_keys):
+        """Checks for unsupported parameter keys in ad operations."""
+        allowed = ALLOWED_KEYS[action]
+        unsupported = []
+        for k in provided_keys:
+            if k not in allowed:
+                unsupported.append(k)
+        assert len(unsupported) == 0, (
+            'unsupported keys provided for %s op: %s' % (action, unsupported))
+
 
     @classmethod
     def check_ad_payment(cls, op, date, num):
