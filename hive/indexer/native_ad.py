@@ -123,24 +123,17 @@ class NativeAd:
         if action == 'adSubmit' or action == 'adBid':
             if 'start_time' in params:
                 valid_date(params['start_time'])
-            if action == 'adSubmit':
-                # time units are compulsory for adSubmit ops
-                assert 'time_units' in params, 'missing time units'
             if 'time_units' in params:
                 ad_time = params['time_units']
                 assert isinstance(ad_time, int), 'time units must be integers'
                 assert ad_time < 2147483647, (
                     'time units must be less than 2147483647')  # SQL max int
-            assert 'bid_amount' in params, 'missing bid amount'
             # TODO: assert bid amount type? (float)
-            assert 'bid_token' in params, 'missing bid token'
         elif action == 'adApprove':
             if 'start_time' in params:
                 valid_date(params['start_time'])
-            assert 'mod_notes' in params, 'missing moderation notes for adApprove op'
             assert isinstance(params['mod_notes'], str), 'mod notes must be a string'
         elif action == 'adReject':
-            assert 'mod_notes' in params, 'missing moderation notes for adReject op'
             assert isinstance(params['mod_notes'], str), 'mod notes must be a string'
             # TODO: enforce a none blank string rule for mod_notes??
         elif action == 'updateAdsSettings':
