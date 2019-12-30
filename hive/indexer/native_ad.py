@@ -37,8 +37,7 @@ class Status(IntEnum):
     draft = 0
     submitted = 1
     approved = 2
-    funded = 3
-    scheduled = 4
+    scheduled = 3
 
 class NativeAd:
     """Hosts validation and commmon methods for native ads."""
@@ -369,16 +368,13 @@ class NativeAdOp:
                 DB.query(sql, **data)
 
             elif action == 'adWithdraw':
+                set_values = 'SET status = %d, ' % Status.draft
                 sql = """UPDATE hive_ads_state
-                            SET status = 0
-                          %s""" % sql_where
+                            %s
+                          %s""" % (set_values, sql_where)
 
             elif action == 'adFund':
-                # # TODO: deprecate funded(3) status
-                if self.ad_state['start_time']:
-                    set_values = 'SET status = 4'
-                else:
-                    set_values = 'SET status = 3'
+                set_values = 'SET status = %d, ' % Status.scheduled
 
                 if self.override_reject:
                     set_values += ", mod_notes = ''"
@@ -388,16 +384,18 @@ class NativeAdOp:
                           %s""" %(set_values, sql_where)
 
             elif action == 'adApprove':
-                values = ', '.join([k +" = :"+k for k in fields])
+                set_values = 'SET status = %d, ' % Status.approved
+                set_values += ', '.join([k +" = :"+k for k in fields])
                 sql = """UPDATE hive_ads_state
-                            SET status = 2, %s
-                          %s""" % (values, sql_where)
+                            %s
+                          %s""" % (set_values, sql_where)
                 DB.query(sql, **data)
 
             elif action == 'adReject':
+                set_values = 'SET status = %d, ' % Status.draft
                 sql = """UPDATE hive_ads_state
-                            SET status = 0, mod_notes = :mod_notes
-                          %s""" % sql_where
+                            %s mod_notes = :mod_notes
+                          %s""" % (set_values, sql_where)
                 DB.query(sql, **data)
 
         # success; update block history
