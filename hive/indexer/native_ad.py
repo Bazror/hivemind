@@ -199,7 +199,12 @@ class NativeAd:
 
         if payment:
             amount, token = parse_amount(op['amount'])
-            params = {'amount': amount, 'token': token}
+            params = {
+                'amount': amount,
+                'token': token,
+                'to_account': op['to'],
+                'community_name': payment['community_name']
+            }
             from hive.indexer.accounts import Accounts
             from hive.indexer.posts import Posts
 
@@ -246,6 +251,7 @@ class NativeAd:
 
             return {
                 'community_id': comm_id,
+                'community_name': comm,
                 'permlink': link
             }
         return None
@@ -483,7 +489,38 @@ class NativeAdOp:
             self._check_bid()
 
         if action == 'adFund':
-            pass # TODO: check late payment, if timed-out reject op and advise management contact
+            # TODO: check late payment, if timed-out reject op and advise management contact
+
+            # check symbol
+            expected_token = self.ads_context['token']
+            assert self.params['token'] == expected_token, (
+                'wrong token sent for ad payment; expected %s' % expected_token
+            )
+
+            # check payment account
+            burn = self.ads_context['burn']
+            _to = self.params['to_account']
+            _comm = self.params['community_name']
+            if burn:
+                assert _to == 'null', (
+                    'community only accepts burn payments for ads; '
+                    'contact community management to resolve the issue.')
+            else:
+                assert _to == _comm, (
+                    'tokens sent to wrong account, expected (@%s)' % _comm)
+
+            # check paid amount
+            expected_amount = self.ad_state['bid_amount']
+            sent_amount = self.params['amount']
+            if sent_amount > expected_amount:
+                diff = sent_amount - expected_amount
+                # TODO: soft notify for refund of difference
+            elif sent_amount < expected_amount:
+                og_time_units = self.ad_state['time_units']
+                og_amount = self.ad_state['bid_amount']
+                pptu = og_amount/og_time_units  # price-per-time-unit
+                new_time_units = int(sent_amount/pptu)
+                # TODO: reduce time units allocated, soft notify
 
     def _validate_time_ranges(self):
         """Checks adApprove ops for time slots that overlap with existing approved ads."""
