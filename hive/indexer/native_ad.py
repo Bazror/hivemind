@@ -198,7 +198,7 @@ class NativeAd:
         payment = cls._valid_payment(memo)
 
         if payment:
-            amount, token = parse_amount(op['amount'])
+            amount, token = parse_amount(op['amount'], bypass_nai_lookup=True)
             params = {
                 'amount': amount,
                 'token': token,

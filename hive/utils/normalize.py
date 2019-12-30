@@ -26,7 +26,7 @@ def sbd_amount(value):
     """Returns a decimal amount, asserting units are SBD"""
     return parse_amount(value, 'SBD')
 
-def parse_amount(value, expected_unit=None):
+def parse_amount(value, expected_unit=None, bypass_nai_lookup=False):
     """Parse steemd-style amout/asset value, return (decimal, name)."""
     # TODO: FUTURE; handle arbitrary NAIs and return nai symbols
     if isinstance(value, dict):
@@ -39,9 +39,12 @@ def parse_amount(value, expected_unit=None):
     elif isinstance(value, list):
         satoshis, precision, nai = value
         dec_amount = decimal.Decimal(satoshis) / (10**precision)
-        assert nai in NAI_MAP, "unknown NAI %s; expected %s" % (
-            nai, expected_unit or '(any)')
-        unit = NAI_MAP[nai]
+        if not bypass_nai_lookup:
+            assert nai in NAI_MAP, "unknown NAI %s; expected %s" % (
+                nai, expected_unit or '(any)')
+            unit = NAI_MAP[nai]
+        else:
+            unit = nai
 
     else:
         raise Exception("invalid input amount %s" % repr(value))
