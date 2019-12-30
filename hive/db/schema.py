@@ -339,7 +339,7 @@ def build_metadata_ads(metadata=None):
         sa.Column('account_id', sa.Integer, nullable=False),
         sa.Column('community_id', sa.Integer, nullable=False),
         sa.Column('time_units', sa.Integer, nullable=False),
-        sa.Column('bid_amount', sa.types.DECIMAL(10, 3), nullable=False),
+        sa.Column('bid_amount', sa.types.REAL, nullable=False),
         sa.Column('bid_token', CHAR(11), nullable=False),
         sa.Column('start_time', sa.DateTime),  # optional, NULL means unscheduled
         sa.Column('status', SMALLINT, nullable=False, server_default='0'),
@@ -359,7 +359,7 @@ def build_metadata_ads(metadata=None):
         sa.Column('enabled', BOOLEAN, nullable=False, server_default='0'),
         sa.Column('token', CHAR(11), nullable=False, server_default='@@000000021'),
         sa.Column('burn', BOOLEAN, nullable=False, server_default='0'),
-        sa.Column('min_bid', sa.types.DECIMAL(10, 3)),
+        sa.Column('min_bid', sa.types.REAL),
         sa.Column('min_time_bid', sa.Integer),
         sa.Column('max_time_bid', sa.Integer),
         sa.Column('max_time_active', sa.Integer),
