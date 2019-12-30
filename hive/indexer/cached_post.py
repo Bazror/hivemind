@@ -556,9 +556,9 @@ class CachedPost:
             # process new native ad, if valid
             ad_sql = NativeAd.process_ad(values)
         else:
-            # TODO: process native ads updates, pre-approval (0-1) status only (in all communities)
-            # ad_sql = NativeAd.process_ad(values, new=False)
             sql = cls._update(values)
+            # update ad content, if draft(0) in all communities
+            ad_sql = NativeAd.process_ad(values, new=False)
 
         # return ad SQL only if it is present
         if ad_sql is not None:

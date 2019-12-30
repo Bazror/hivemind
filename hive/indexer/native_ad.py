@@ -58,15 +58,22 @@ class NativeAd:
             ad_metadata = cls._check_ad_metadata(json.loads(entry['json']))
             if ad_metadata is not None:
                 # build ad post
+                post_id = entry['post_id']
                 post = [
-                    ('post_id', entry['post_id']),
+                    ('post_id', post_id),
                     ('type', ad_metadata['type']),
                     ('properties', json.dumps(ad_metadata['properties']))
                 ]
                 if new:
                     return cls._insert(post)
                 else:
-                    return cls._update(post)
+                    ad_statuses = cls.get_ad_status(post_id)
+                    if ad_statuses:
+                        for _status in ad_statuses:
+                            if _status > Status.draft:
+                                # TODO: notify post owner
+                                return None
+                        return cls._update(post)
 
         return None
 
