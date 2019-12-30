@@ -149,10 +149,10 @@ class NativeAd:
                     "the 'enabled' property must be a boolean")
             if 'token' in params:
                 is_nai = is_valid_nai(params['token'])
-                if not is_nai:  # TODO: remove pre-smt handler below and default DB token to nai
-                    assert params['token'] in ['STEEM', 'SBD'], (
-                        'invalid token entered: %s' % params['token']
-                    )
+                assert is_nai, (
+                    'invalid NAI format entered: %s' % params['token']
+                )
+                # TODO: future, possible check against register
             if 'burn' in params:
                 assert isinstance(params['burn'], bool), (
                     "the 'burn' property must be a boolean"
