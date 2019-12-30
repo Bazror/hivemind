@@ -340,7 +340,7 @@ def build_metadata_ads(metadata=None):
         sa.Column('community_id', sa.Integer, nullable=False),
         sa.Column('time_units', sa.Integer, nullable=False),
         sa.Column('bid_amount', sa.types.DECIMAL(10, 3), nullable=False),
-        sa.Column('bid_token', VARCHAR(10), nullable=False),
+        sa.Column('bid_token', CHAR(11), nullable=False),
         sa.Column('start_time', sa.DateTime),  # optional, NULL means unscheduled
         sa.Column('status', SMALLINT, nullable=False, server_default='0'),
         sa.Column('mod_notes', sa.String(500), server_default=''),
@@ -357,7 +357,7 @@ def build_metadata_ads(metadata=None):
         'hive_ads_settings', metadata,
         sa.Column('community_id', sa.Integer, primary_key=True, autoincrement=False),
         sa.Column('enabled', BOOLEAN, nullable=False, server_default='0'),
-        sa.Column('token', VARCHAR(10), nullable=False, server_default='STEEM'),
+        sa.Column('token', CHAR(11), nullable=False, server_default='@@000000021'),
         sa.Column('burn', BOOLEAN, nullable=False, server_default='0'),
         sa.Column('min_bid', sa.types.DECIMAL(10, 3)),
         sa.Column('min_time_bid', sa.Integer),
