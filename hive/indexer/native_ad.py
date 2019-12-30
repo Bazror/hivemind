@@ -142,9 +142,8 @@ class NativeAd:
                 assert isinstance(params['enabled'], bool), (
                     "the 'enabled' property must be a boolean")
             if 'token' in params:
-                # TODO: check if nai is in registry??
                 is_nai = is_valid_nai(params['token'])
-                if not is_nai:  # TODO: remove pre-smt handler below
+                if not is_nai:  # TODO: remove pre-smt handler below and default DB token to nai
                     assert params['token'] in ['STEEM', 'SBD'], (
                         'invalid token entered: %s' % params['token']
                     )
@@ -259,7 +258,7 @@ class NativeAd:
 
     @classmethod
     def update_block_hist(cls, num, community_id, account_id, post_id, action):
-        """Maintains a current block history of all native ad ops, to resolve conflicts."""
+        """Maintains a current block history of all valid native ad ops, to resolve conflicts."""
         if num in cls._block_hist:
             _buffer = cls._block_hist[num]
         else:
@@ -375,7 +374,7 @@ class NativeAdOp:
                           %s""" % sql_where
 
             elif action == 'adFund':
-                # check if scheduled
+                # # TODO: deprecate funded(3) status
                 if self.ad_state['start_time']:
                     set_values = 'SET status = 4'
                 else:
@@ -389,9 +388,9 @@ class NativeAdOp:
                           %s""" %(set_values, sql_where)
 
             elif action == 'adApprove':
-                values = 'status = 2, '.join([k +" = :"+k for k in fields])
+                values = ', '.join([k +" = :"+k for k in fields])
                 sql = """UPDATE hive_ads_state
-                            SET %s
+                            SET status = 2, %s
                           %s""" % (values, sql_where)
                 DB.query(sql, **data)
 
@@ -445,7 +444,7 @@ class NativeAdOp:
             )
             if conflict_rej and ad_status == Status.draft:
                 # override adReject op
-                # TODO: notify mod, flag for mod_notes removal
+                # TODO: notify mod
                 self.override_reject = True
             else:
                 # proceed with normal validation
@@ -455,8 +454,6 @@ class NativeAdOp:
 
 
         elif action == 'adApprove':
-            # TODO: don't approve unscheduled ads that don't have a start_time provided
-            # TODO: avoid overwrite of customer's start by mod's start_time
             assert ad_status == Status.submitted, 'can only approve ads that are pending review'
             if self.ad_state['start_time']:
                 assert 'start_time' not in self.params, (
@@ -634,13 +631,13 @@ class NativeAdOp:
         return result
 
     def _get_active_time_units(self):
-        """Get the total number of active time units for the transacting account."""
-        # for ads with status of approved +
+        """Get the total number of active time units for the transacting account.
+           (Only for ads with status of approved(2) and scheduled(3)."""
         sql = """SELECT SUM(time_units) FROM hive_ads_state
                   WHERE post_id = :post_id
                   AND account_id = :account_id
                   AND community_id = :community_id
-                  AND status > 1"""
+                  AND status > 1"""  # TODO: investigate explicit expression (2,3)
         active_units = DB.query_one(
             sql,
             post_id=self.post_id,
