@@ -28,7 +28,6 @@ def sbd_amount(value):
 
 def parse_amount(value, expected_unit=None, bypass_nai_lookup=False):
     """Parse steemd-style amout/asset value, return (decimal, name)."""
-    # TODO: FUTURE; handle arbitrary NAIs and return nai symbols
     if isinstance(value, dict):
         value = [value['amount'], value['precision'], value['nai']]
 
