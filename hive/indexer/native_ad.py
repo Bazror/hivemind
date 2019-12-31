@@ -681,7 +681,8 @@ class NativeAdOp:
         """Retrieve current community's native ad settings."""
 
         sql = """SELECT enabled, token, burn, min_bid,
-                        min_time_bid, max_time_bid, max_time_active
+                        min_time_bid, max_time_bid, max_time_active,
+                        scheduled_ads_delay, scheduled_ads_timeout
                     FROM hive_ads_settings
                     WHERE community_id = :community_id"""
         ads_prefs = DB.query_row(sql, community_id=self.community_id)
@@ -694,7 +695,9 @@ class NativeAdOp:
                 'min_bid': ads_prefs[3],
                 'min_time_bid': ads_prefs[4],
                 'max_time_bid': ads_prefs[5],
-                'max_time_active': ads_prefs[6]
+                'max_time_active': ads_prefs[6],
+                'scheduled_ads_delay': ads_prefs[7],
+                'scheduled_ads_timeout': ads_prefs[8]
             }
         else:
             # make default entry and return dummy default
@@ -710,6 +713,8 @@ class NativeAdOp:
                 'min_bid': None,
                 'min_time_bid': None,
                 'max_time_bid': None,
-                'max_time_active': None
+                'max_time_active': None,
+                'scheduled_ads_delay': 1440,
+                'scheduled_ads_timeout': None
             }
         return result

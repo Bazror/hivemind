@@ -363,9 +363,8 @@ def build_metadata_ads(metadata=None):
         sa.Column('min_time_bid', sa.Integer),
         sa.Column('max_time_bid', sa.Integer),
         sa.Column('max_time_active', sa.Integer),
-        # TODO: Native Ads v0.2
-        #sa.Column('scheduled_delay', sa.Integer, nullable=False, server_default='1440'),
-        #sa.Column('scheduled_timeout', sa.Integer)
+        sa.Column('scheduled_delay', sa.Integer, nullable=False, server_default='1440'),
+        sa.Column('scheduled_timeout', sa.Integer),
 
         sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_settings_fk1'),
         # TODO: indexes ??
