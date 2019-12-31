@@ -3,6 +3,7 @@
 #pylint: disable=too-many-lines
 
 import json
+from datetime import datetime
 from enum import IntEnum
 from hive.db.adapter import Db
 
@@ -474,9 +475,18 @@ class NativeAdOp:
                 )
         elif action == 'adReject':
             # TODO: check conflict_adfund op, ignore rej op if found, else proceed as usual
-            ad_timed_out = self._check_ad_timeout()
-            if not ad_timed_out:
-                assert ad_status == Status.submitted, 'can only reject ads that are pending review'
+            conflict_fund = NativeAd.check_block_hist(
+                self.block_num,
+                self.community_id,
+                self.account_id,
+                self.post_id,
+                'adFund'
+            )
+            if not conflict_fund:
+                ad_timed_out = self._check_ad_timeout()
+                if not ad_timed_out:
+                    assert ad_status == Status.submitted, (
+                        'can only reject ads that are pending review or timed out')
         elif action == 'updateAdsSettings':
             pass # TODO: check no active/approved ads for community, if disabling native ads
 
@@ -609,7 +619,11 @@ class NativeAdOp:
                 % (tot_active_units, max_time_active))
 
     def _check_ad_timeout(self):
-        return False # TODO: check start time vs current time (mind TZ)
+        if self.ad_state['status'] == Status.approved:
+            now = datetime.utcnow()
+            start_time = datetime.fromisoformat(self.ad_state['start_time'])
+            return now > start_time
+        return False
 
     def _has_ads_settings(self):
         """Check if current community has settings entry."""
