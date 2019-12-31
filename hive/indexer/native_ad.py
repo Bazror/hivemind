@@ -693,8 +693,8 @@ class NativeAdOp:
                 'min_time_bid': ads_prefs[4],
                 'max_time_bid': ads_prefs[5],
                 'max_time_active': ads_prefs[6],
-                'scheduled_ads_delay': ads_prefs[7],
-                'scheduled_ads_timeout': ads_prefs[8]
+                'scheduled_delay': ads_prefs[7],
+                'scheduled_timeout': ads_prefs[8]
             }
         else:
             # make default entry and return dummy default
@@ -711,7 +711,7 @@ class NativeAdOp:
                 'min_time_bid': None,
                 'max_time_bid': None,
                 'max_time_active': None,
-                'scheduled_ads_delay': 1440,
-                'scheduled_ads_timeout': None
+                'scheduled_delay': 1440,
+                'scheduled_timeout': None
             }
         return result

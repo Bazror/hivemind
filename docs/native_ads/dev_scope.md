@@ -92,6 +92,8 @@ The `hive_ads_settings` table hosts ad-related settings/preferences for communit
     min_bid real,
     min_time_bid integer,
     max_time_bid integer,
-    max_time_active integer
+    max_time_active integer,
+    scheduled_delay integer NOT NULL DEFAULT 1440,
+    scheduled_timeout integer
 
 ```

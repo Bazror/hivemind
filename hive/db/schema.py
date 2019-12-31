@@ -238,6 +238,7 @@ def build_metadata():
     )
 
     metadata = build_metadata_community(metadata)
+    #metadata = build_metadata_ads(metadata)
 
     return metadata
 
@@ -348,7 +349,8 @@ def build_metadata_ads(metadata=None):
         #sa.Column('user_disabled', BOOLEAN, nullable=False, server_default='0'),
 
         sa.ForeignKeyConstraint(['post_id'], ['hive_ads.post_id'], name='hive_ads_state_fk1'),
-        sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_state_fk2'),
+        sa.ForeignKeyConstraint(['account_id'], ['hive.accounts.id'], name='hive_ads_state_fk2'),
+        sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_state_fk3'),
         sa.UniqueConstraint('post_id', 'community_id', name='hive_ads_state_ux1'),
         # TODO: indexes ??
     )
