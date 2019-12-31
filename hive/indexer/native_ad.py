@@ -388,7 +388,7 @@ class NativeAdOp:
                     set_values += 'time_units = %d, ' % self.ad_state['time_units']
 
                 if self.override_reject:
-                    set_values += ", mod_notes = ''"
+                    set_values += "mod_notes = ''"
 
                 sql = """UPDATE hive_ads_state
                             %s
