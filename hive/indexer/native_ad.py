@@ -321,6 +321,7 @@ class NativeAdOp:
         self.ads_context = self._get_ads_context()
         self.is_new_state = False
         self.override_reject = False
+        self.reduced_time_units = False
 
     def validate_op(self):
         """Validate the native ad op."""
@@ -382,6 +383,9 @@ class NativeAdOp:
 
             elif action == 'adFund':
                 set_values = 'SET status = %d, ' % Status.scheduled
+
+                if self.reduced_time_units:
+                    set_values += 'time_units = %d, ' % self.ad_state['time_units']
 
                 if self.override_reject:
                     set_values += ", mod_notes = ''"
@@ -522,7 +526,9 @@ class NativeAdOp:
                 og_amount = self.ad_state['bid_amount']
                 pptu = og_amount/og_time_units  # price-per-time-unit
                 new_time_units = int(sent_amount/pptu)
-                # TODO: reduce time units allocated, soft notify
+                # TODO: soft notify
+                self.ad_state['time_units'] = new_time_units
+                self.reduced_time_units = True
 
     def _validate_time_ranges(self):
         """Checks adApprove ops for time slots that overlap with existing approved ads."""
