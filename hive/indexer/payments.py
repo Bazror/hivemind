@@ -9,7 +9,7 @@ from hive.utils.normalize import parse_amount
 from hive.indexer.posts import Posts
 from hive.indexer.accounts import Accounts
 from hive.indexer.cached_post import CachedPost
-from hive.indexer.native_ad import NativeAd
+from hive.indexer.native_ads import NativeAd
 
 log = logging.getLogger(__name__)
 

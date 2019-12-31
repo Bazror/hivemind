@@ -12,7 +12,7 @@ from hive.utils.post import post_basic, post_legacy, post_payout, post_stats, me
 from hive.utils.timer import Timer
 from hive.indexer.accounts import Accounts
 from hive.indexer.notify import Notify
-from hive.indexer.native_ad import NativeAd
+from hive.indexer.native_ads import NativeAd
 
 # pylint: disable=too-many-lines
 

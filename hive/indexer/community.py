@@ -10,8 +10,8 @@ import ujson as json
 from hive.db.adapter import Db
 from hive.indexer.accounts import Accounts
 from hive.indexer.notify import Notify
-from hive.indexer.native_ad import NativeAd
-from hive.indexer.native_ad import NativeAdOp
+from hive.indexer.native_ads import NativeAd
+from hive.indexer.native_ads import NativeAdOp
 from hive.db.db_state import DbState
 
 log = logging.getLogger(__name__)
