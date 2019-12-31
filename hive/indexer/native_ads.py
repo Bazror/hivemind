@@ -33,6 +33,10 @@ REQUIRED_KEYS = {
     'updateAdsSettings': []
 }
 
+# TODO: pick start_block and start_time
+START_BLOCK = None
+START_TIME = None
+
 class Status(IntEnum):
     """Labels for ad status."""
     draft = 0
