@@ -505,7 +505,12 @@ class NativeAdOp:
             self._check_bid()
 
         if action == 'adFund':
-            # TODO: check late payment, if timed-out reject op and advise management contact
+
+            # check timeout
+            ad_timed_out = self._check_ad_timeout()
+            assert not ad_timed_out, (
+                "ad payment is late; contact community management to resolve the issue"
+            )
 
             # check symbol
             expected_token = self.ads_context['token']
@@ -520,7 +525,7 @@ class NativeAdOp:
             if burn:
                 assert _to == 'null', (
                     'community only accepts burn payments for ads; '
-                    'contact community management to resolve the issue.')
+                    'contact community management to resolve the issue')
             else:
                 assert _to == _comm, (
                     'tokens sent to wrong account, expected (@%s)' % _comm)
