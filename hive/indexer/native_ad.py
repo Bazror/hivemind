@@ -474,7 +474,6 @@ class NativeAdOp:
                     'no start_time provided for unscheduled ad'
                 )
         elif action == 'adReject':
-            # TODO: check conflict_adfund op, ignore rej op if found, else proceed as usual
             conflict_fund = NativeAd.check_block_hist(
                 self.block_num,
                 self.community_id,
