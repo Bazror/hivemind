@@ -486,9 +486,6 @@ class NativeAdOp:
                 if not ad_timed_out:
                     assert ad_status == Status.submitted, (
                         'can only reject ads that are pending review or timed out')
-        elif action == 'updateAdsSettings':
-            pass # TODO: check no active/approved ads for community, if disabling native ads
-
 
     def _validate_ad_compliance(self):
         """Check if operation complies with community level ad settings"""
@@ -497,8 +494,9 @@ class NativeAdOp:
         action = self.action
 
         if action != 'updateAdsSettings':  # bypass check when updating settings
-            accepts_ads = self.ads_context['enabled']
-            assert accepts_ads, 'community does not accept ads'
+            if action not in ['adReject', 'adFund']:  # exempt from accepts_ad check
+                accepts_ads = self.ads_context['enabled']
+                assert accepts_ads, 'community does not accept ads'
 
         if action == 'adSubmit' or action == 'adBid':
             self._check_bid()
