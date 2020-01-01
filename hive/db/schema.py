@@ -238,7 +238,6 @@ def build_metadata():
     )
 
     metadata = build_metadata_community(metadata)
-    #metadata = build_metadata_ads(metadata)
 
     return metadata
 
@@ -317,65 +316,6 @@ def build_metadata_community(metadata=None):
     )
 
     return metadata
-
-def build_metadata_ads(metadata=None):
-    """Build native ads schema def"""
-    if not metadata:
-        metadata = sa.MetaData()
-
-    sa.Table(
-        'hive_ads', metadata,
-        sa.Column('post_id', sa.Integer, primary_key=True, autoincrement=False),
-        sa.Column('account_id', sa.Integer, nullable=False),
-        sa.Column('type', VARCHAR(16), nullable=False),
-        sa.Column('properties', sa.Text, nullable=False),
-
-        sa.ForeignKeyConstraint(['post_id'], ['hive_posts.id'], name='hive_ads_fk1'),
-        sa.ForeignKeyConstraint(['account_id'], ['hive_accounts.id'], name='hive_ads_fk2')
-
-        # TODO: indexes ??
-    )
-
-    sa.Table(
-        'hive_ads_state', metadata,
-        sa.Column('post_id', sa.Integer, nullable=False),
-        sa.Column('account_id', sa.Integer, nullable=False),
-        sa.Column('community_id', sa.Integer, nullable=False),
-        sa.Column('time_units', sa.Integer, nullable=False),
-        sa.Column('bid_amount', sa.types.REAL, nullable=False),
-        sa.Column('bid_token', CHAR(11), nullable=False),
-        sa.Column('start_time', sa.DateTime),  # optional, NULL means unscheduled
-        sa.Column('status', SMALLINT, nullable=False, server_default='0'),
-        sa.Column('mod_notes', sa.String(500), server_default=''),
-        # TODO: user_disabled field for user cancellation override, edge-case, useful??
-        #sa.Column('user_disabled', BOOLEAN, nullable=False, server_default='0'),
-
-        sa.ForeignKeyConstraint(['post_id'], ['hive_ads.post_id'], name='hive_ads_state_fk1'),
-        sa.ForeignKeyConstraint(['account_id'], ['hive.accounts.id'], name='hive_ads_state_fk2'),
-        sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_state_fk3'),
-        sa.UniqueConstraint('post_id', 'community_id', name='hive_ads_state_ux1'),
-        # TODO: indexes ??
-    )
-
-    sa.Table(
-        'hive_ads_settings', metadata,
-        sa.Column('community_id', sa.Integer, primary_key=True, autoincrement=False),
-        sa.Column('enabled', BOOLEAN, nullable=False, server_default='0'),
-        sa.Column('token', CHAR(11), nullable=False, server_default='@@000000021'),
-        sa.Column('burn', BOOLEAN, nullable=False, server_default='0'),
-        sa.Column('min_bid', sa.types.REAL),
-        sa.Column('min_time_bid', sa.Integer),
-        sa.Column('max_time_bid', sa.Integer),
-        sa.Column('max_time_active', sa.Integer),
-        sa.Column('scheduled_delay', sa.Integer, nullable=False, server_default='1440'),
-        sa.Column('scheduled_timeout', sa.Integer),
-
-        sa.ForeignKeyConstraint(['community_id'], ['hive_communities.id'], name='hive_ads_settings_fk1'),
-        # TODO: indexes ??
-    )
-
-    return metadata
-
 
 def teardown(db):
     """Drop all tables"""
