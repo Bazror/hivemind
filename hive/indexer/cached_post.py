@@ -474,6 +474,7 @@ class CachedPost:
                             % (level, pid, cls.last_id(), repr(post)))
 
         # start building the queries
+        acc_id = Accounts.get_id(post['author'])
         values = [('post_id', pid)]
 
         # immutable; write only once (*edge case: undeleted posts)
@@ -554,11 +555,11 @@ class CachedPost:
         if level == 'insert':
             sql = cls._insert(values)
             # process new native ad, if valid
-            ad_sql = NativeAd.process_ad(values)
+            ad_sql = NativeAd.process_ad(values, acc_id)
         else:
             sql = cls._update(values)
             # update ad content, if draft(0) in all communities
-            ad_sql = NativeAd.process_ad(values, new=False)
+            ad_sql = NativeAd.process_ad(values, acc_id, new=False)
 
         # return ad SQL only if it is present
         if ad_sql is not None:

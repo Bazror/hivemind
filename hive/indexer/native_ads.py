@@ -52,7 +52,7 @@ class NativeAd:
 
 
     @classmethod
-    def process_ad(cls, values, new=True):
+    def process_ad(cls, values, account_id, new=True):
         """Hooks into cached posts sql building. Given a cached post insert value set,
         generate SQL statements for valid native ads
         and return."""
@@ -64,10 +64,9 @@ class NativeAd:
             if ad_metadata is not None:
                 # build ad post
                 post_id = entry['post_id']
-                acc_id = entry['account_id']
                 post = [
                     ('post_id', post_id),
-                    ('account_id', acc_id),
+                    ('account_id', account_id),
                     ('type', ad_metadata['type']),
                     ('properties', json.dumps(ad_metadata['properties']))
                 ]
