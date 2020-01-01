@@ -57,6 +57,7 @@ The `hive_ads` table hosts primary data for all valid native ads.
 
 ```
     post_id integer PRIMARY KEY REFERENCES hive_posts (id),
+    account_id integer NOT NULL REFERENCES hive_accounts (id),
     type varchar(16) NOT NULL,
     properties text NOT NULL
 

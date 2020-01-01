@@ -64,8 +64,10 @@ class NativeAd:
             if ad_metadata is not None:
                 # build ad post
                 post_id = entry['post_id']
+                acc_id = entry['account_id']
                 post = [
                     ('post_id', post_id),
+                    ('account_id', acc_id),
                     ('type', ad_metadata['type']),
                     ('properties', json.dumps(ad_metadata['properties']))
                 ]
@@ -76,8 +78,7 @@ class NativeAd:
                     if ad_statuses:
                         for _status in ad_statuses:
                             if _status > Status.draft:
-                                # TODO: notify post owner
-                                return None
+                                return None  # ignore update if a non-draft status is found
                         return cls._update(post)
 
         return None

@@ -326,10 +326,12 @@ def build_metadata_ads(metadata=None):
     sa.Table(
         'hive_ads', metadata,
         sa.Column('post_id', sa.Integer, primary_key=True, autoincrement=False),
+        sa.Column('account_id', sa.Integer, nullable=False),
         sa.Column('type', VARCHAR(16), nullable=False),
         sa.Column('properties', sa.Text, nullable=False),
 
         sa.ForeignKeyConstraint(['post_id'], ['hive_posts.id'], name='hive_ads_fk1'),
+        sa.ForeignKeyConstraint(['account_id'], ['hive_accounts.id'], name='hive_ads_fk2')
 
         # TODO: indexes ??
     )
