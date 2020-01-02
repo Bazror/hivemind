@@ -134,6 +134,12 @@ def build_methods():
         hive_api_community.list_all_subscriptions,
     )})
 
+    # native_ads methods
+    methods.add(**{'hive_ads.' + method.__name__: method for method in (
+        hive_api_community.get_user_ads,
+        hive_api_community.get_bid_market
+    )})
+
     return methods
 
 def truncate_response_log(logger):

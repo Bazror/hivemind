@@ -325,3 +325,90 @@ async def _top_community_posts(db, community, limit=50):
                 AND post_id IN (SELECT id FROM hive_posts WHERE is_muted = '0')
            ORDER BY payout DESC LIMIT :limit"""
     return await db.query_all(sql, community=community, limit=limit)
+
+# Native Ads
+# ---
+
+async def get_user_ads(context, account, community=None):
+    """List all ad posts created by account. If `community` is provided,
+        it lists all ads submitted to that community and their state."""
+
+    db = context['db']
+    account_id = await get_account_id(db, account)
+    params = {'account_id': account_id}
+    if community:
+        community_id = await get_community_id(db, community)
+        assert community_id, 'community not found: %s' % community
+        params['community_id'] = community_id
+
+    sql = """SELECT p.title, p.body, p.json, a.type, a.properties,
+                    s.time_units, s.bid_amount, s.bid_token,
+                    s.start_time, s.status, s.mod_notes
+                FROM hive_ads a
+                JOIN hive_posts_cache p ON a.post_id = p.post_id
+          """
+    if community:
+        sql += """JOIN hive_ads_state s ON a.post_id = s.post_id
+                                        AND s.community_id = :community_id
+               """
+    sql += """WHERE a.account_id = :account_id"""
+
+    res = await db.query_all(sql, **params)
+
+    all_ads = None
+    # compile list of dicts from result
+    if res:
+        all_ads = []
+        for _ad in res:
+            _json = json.loads(_ad[2])
+            del _json['native_ad']
+            entry = {
+                'title': _ad[0],
+                'body': _ad[1],
+                'json': _json,
+                'ad_type': _ad[3],
+                'ad_properties': json.loads(_ad[4])
+            }
+            if community:
+                entry['time_units'] = _ad[5]
+                entry['bid_amount'] = _ad[6]
+                entry['bid_token'] = _ad[7]
+                entry['start_time'] = _ad[8]
+                entry['status'] = _ad[9]
+                entry['mod_notes'] = _ad[10]
+            all_ads.append(entry)
+    return all_ads or None
+
+async def get_bid_market(context, community):
+    """List all active bids (and respective properties) for ads in a community,
+       sorted by price-per-time-unit."""
+
+    db = context['db']
+    community_id = await get_community_id(db, community)
+
+    sql = """SELECT p.author, p.title, a.type, s.time_units, s.bid_amount,
+                    s.start_time, (s.bid_amount / s.time_units) AS pptu
+                FROM hive_ads a
+                JOIN hive_posts_cache p on a.post_id = p.post_id
+                JOIN hive_ads_state s ON a.post_id = s.post_id
+                                        AND s.community_id = :community_id
+                WHERE s.status = 1
+                ORDER BY pptu DESC"""
+
+    res = await db.query_all(sql, community_id=community_id)
+    all_ads = None
+    # compile list
+    if res:
+        all_ads = []
+        for _ad in res:
+            entry = {
+                'author': _ad[0],
+                'title': _ad[1],
+                'ad_type': _ad[2],
+                'time_units': _ad[3],
+                'bid_amount': _ad[4],
+                'start_time': _ad[5],
+                'pptu': _ad[6]
+            }
+            all_ads.append(entry)
+    return all_ads
