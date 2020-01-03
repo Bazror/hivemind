@@ -426,6 +426,9 @@ class NativeAdOp:
     def _validate_ad_state(self):
         """Checks the operation against the rules permitted for the ad's current state."""
 
+        valid_ad = self._has_ad_entry(self.post_id)
+        assert valid_ad, 'the specified post is not a valid ad'
+
         action = self.action
         self.ad_state = self._get_ad_state()
 
@@ -636,6 +639,12 @@ class NativeAdOp:
         sql = """SELECT 1 FROM hive_ads_settings
                   WHERE community_id = :community_id"""
         return bool(DB.query_one(sql, community_id=self.community_id))
+
+    def _has_ad_entry(self, pid):
+        """Checks if the post has an entry in `hive_ads` table."""
+        sql = """SELECT 1 FROM hive_ads
+                    WHERE post_id = :post_id"""
+        return bool(DB.query_one(sql, post_id=pid))
 
     def _get_ad_state(self):
         """Return the full state of the ad in the current community's context."""
