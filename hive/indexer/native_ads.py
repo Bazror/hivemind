@@ -414,6 +414,15 @@ class NativeAdOp:
                           %s""" % (set_values, sql_where)
                 DB.query(sql, **data)
 
+            elif action == 'updateAdsSettings':
+                del data['account_id']
+                del data['post_id']
+                set_values = ', '.join([k +" = :"+k for k in fields])
+                sql = """UPDATE hive_ads_settings
+                            SET %s
+                          WHERE community_id = :community_id"""
+                DB.query(sql, **data)
+
         # success; update block history
         NativeAd.update_block_hist(
             self.block_num,
@@ -441,58 +450,60 @@ class NativeAdOp:
             assert ad_status in [None, Status.draft], (
                 'can only submit ads that are new or in draft status')
 
-        assert self.ad_state, (
-            'ad not yet submitted to community; cannot perform %s op' % action)
+        else:
 
-        if action == 'adBid':
-            assert ad_status == Status.submitted, 'can only bid for ads that are pending review'
-        elif action == 'adWithdraw':
-            assert ad_status in [Status.submitted, Status.approved], (
-                "can only withdraw submitted or approved ads, not '%s' ads"
-                % Status(ad_status).name
-            )
-        elif action == 'adFund':
-            conflict_rej = NativeAd.check_block_hist(
-                self.block_num,
-                self.community_id,
-                self.account_id,
-                self.post_id,
-                'adReject'
-            )
-            if conflict_rej and ad_status == Status.draft:
-                # override adReject op
-                # TODO: notify mod
-                self.override_reject = True
-            else:
-                # proceed with normal validation
-                assert ad_status == Status.approved, (
-                    "you have funded an ad with status '%s'; consider "
-                    "contacting the community management to resolve this") % Status(ad_status).name
+            assert self.ad_state, (
+                'ad not yet submitted to community; cannot perform %s op' % action)
 
-
-        elif action == 'adApprove':
-            assert ad_status == Status.submitted, 'can only approve ads that are pending review'
-            if self.ad_state['start_time']:
-                assert 'start_time' not in self.params, (
-                    "ad already has a start_time; cannot overwrite a customer's start_time"
+            if action == 'adBid':
+                assert ad_status == Status.submitted, 'can only bid for ads that are pending review'
+            elif action == 'adWithdraw':
+                assert ad_status in [Status.submitted, Status.approved], (
+                    "can only withdraw submitted or approved ads, not '%s' ads"
+                    % Status(ad_status).name
                 )
-            else:
-                assert 'start_time' in self.params, (
-                    'no start_time provided for unscheduled ad'
+            elif action == 'adFund':
+                conflict_rej = NativeAd.check_block_hist(
+                    self.block_num,
+                    self.community_id,
+                    self.account_id,
+                    self.post_id,
+                    'adReject'
                 )
-        elif action == 'adReject':
-            conflict_fund = NativeAd.check_block_hist(
-                self.block_num,
-                self.community_id,
-                self.account_id,
-                self.post_id,
-                'adFund'
-            )
-            if not conflict_fund:
-                ad_timed_out = self._check_ad_timeout()
-                if not ad_timed_out:
-                    assert ad_status == Status.submitted, (
-                        'can only reject ads that are pending review or timed out')
+                if conflict_rej and ad_status == Status.draft:
+                    # override adReject op
+                    # TODO: notify mod
+                    self.override_reject = True
+                else:
+                    # proceed with normal validation
+                    assert ad_status == Status.approved, (
+                        "you have funded an ad with status '%s'; consider "
+                        "contacting the community management to resolve this") % Status(ad_status).name
+
+
+            elif action == 'adApprove':
+                assert ad_status == Status.submitted, 'can only approve ads that are pending review'
+                if self.ad_state['start_time']:
+                    assert 'start_time' not in self.params, (
+                        "ad already has a start_time; cannot overwrite a customer's start_time"
+                    )
+                else:
+                    assert 'start_time' in self.params, (
+                        'no start_time provided for unscheduled ad'
+                    )
+            elif action == 'adReject':
+                conflict_fund = NativeAd.check_block_hist(
+                    self.block_num,
+                    self.community_id,
+                    self.account_id,
+                    self.post_id,
+                    'adFund'
+                )
+                if not conflict_fund:
+                    ad_timed_out = self._check_ad_timeout()
+                    if not ad_timed_out:
+                        assert ad_status == Status.submitted, (
+                            'can only reject ads that are pending review or timed out')
 
     def _validate_ad_compliance(self):
         """Check if operation complies with community level ad settings"""
@@ -652,7 +663,7 @@ class NativeAdOp:
                   FROM hive_ads_state
                     WHERE post_id = :post_id
                     AND community_id = :community_id"""
-        _state = DB.query_all(sql, post_id=self.post_id, community_id=self.community_id)
+        _state = DB.query_row(sql, post_id=self.post_id, community_id=self.community_id)
         if _state:
             result = {
                 'time_units': _state[0],
@@ -692,7 +703,7 @@ class NativeAdOp:
 
         sql = """SELECT enabled, token, burn, min_bid,
                         min_time_bid, max_time_bid, max_time_active,
-                        scheduled_ads_delay, scheduled_ads_timeout
+                        scheduled_delay, scheduled_timeout
                     FROM hive_ads_settings
                     WHERE community_id = :community_id"""
         ads_prefs = DB.query_row(sql, community_id=self.community_id)
