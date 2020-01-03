@@ -131,6 +131,9 @@ class NativeAd:
         """Validates schema for given native ad operations."""
         cls.check_required_keys(action, params.keys())
         cls.check_allowed_keys(action, params.keys())
+
+        assert len(params) > 0, 'no parameters provided for %s op' % action
+
         if action == 'adSubmit' or action == 'adBid':
             if 'start_time' in params:
                 valid_date(params['start_time'])
@@ -139,16 +142,26 @@ class NativeAd:
                 assert isinstance(ad_time, int), 'time units must be integers'
                 assert ad_time < 2147483647, (
                     'time units must be less than 2147483647')  # SQL max int
-            # TODO: assert bid amount type? (float)
+
+            assert isinstance(params['bid_amount'], float), (
+                'bid_amount must be a decimal number')
+
+            is_nai = is_valid_nai(params['bid_token'])
+            assert is_nai, (
+                'invalid NAI format entered: %s' % params['token']
+            )
+            # TODO: future, possible check against register
+
         elif action == 'adApprove':
             if 'start_time' in params:
                 valid_date(params['start_time'])
             assert isinstance(params['mod_notes'], str), 'mod notes must be a string'
+
         elif action == 'adReject':
             assert isinstance(params['mod_notes'], str), 'mod notes must be a string'
             # TODO: enforce a none blank string rule for mod_notes??
+
         elif action == 'updateAdsSettings':
-            assert len(params) > 0, 'no native ad settings provided'
             if 'enabled' in params:
                 assert isinstance(params['enabled'], bool), (
                     "the 'enabled' property must be a boolean")
@@ -164,7 +177,7 @@ class NativeAd:
                 )
             if 'min_bid' in params:
                 assert isinstance(params['min_bid'], float), (
-                    'minimum bid must be a number'
+                    'minimum bid must be a decimal number'
                 )
             if 'min_time_bid' in params:
                 assert isinstance(params['min_time_bid'], int), (
@@ -175,7 +188,7 @@ class NativeAd:
                     'maximum time units per bid must be an integer'
                 )
             if 'max_time_active' in params:
-                assert isinstance(params['max_time_active', int]), (
+                assert isinstance(params['max_time_active'], int), (
                     'maximum active time units per account must be an integer'
                 )
     @classmethod
@@ -355,16 +368,16 @@ class NativeAdOp:
 
             if self.is_new_state:
                 # use INSERT op
-                columns = ', '.join(fields)
-                values = ', '.join([":" + k for k in fields])
+                columns = ', '.join(data)
+                values = ', '.join([":" + k for k in data])
 
-                sql = """INSERT INTO hive_ads_state (%s)
-                            VALUES (%s)""" % (columns, values)
+                sql = """INSERT INTO hive_ads_state (%s, status)
+                            VALUES (%s, 1)""" % (columns, values)
                 DB.query(sql, **data)
             else:
                 # use UPDATE op
                 values = ', '.join([k +" = :"+k for k in fields])
-                sql = """UPDATE hive_ads_state SET %s
+                sql = """UPDATE hive_ads_state SET status = 1, %s
                            %s""" %(values, sql_where)
                 DB.query(sql, **data)
 
@@ -381,10 +394,11 @@ class NativeAdOp:
                 DB.query(sql, **data)
 
             elif action == 'adWithdraw':
-                set_values = 'SET status = %d, ' % Status.draft
+                set_values = 'SET status = %d' % Status.draft
                 sql = """UPDATE hive_ads_state
                             %s
                           %s""" % (set_values, sql_where)
+                DB.query(sql, **data)
 
             elif action == 'adFund':
                 set_values = 'SET status = %d, ' % Status.scheduled
@@ -420,7 +434,7 @@ class NativeAdOp:
                 set_values = ', '.join([k +" = :"+k for k in fields])
                 sql = """UPDATE hive_ads_settings
                             SET %s
-                          WHERE community_id = :community_id"""
+                          WHERE community_id = :community_id""" % set_values
                 DB.query(sql, **data)
 
         # success; update block history
@@ -435,10 +449,14 @@ class NativeAdOp:
     def _validate_ad_state(self):
         """Checks the operation against the rules permitted for the ad's current state."""
 
+        action = self.action
+
+        if action == 'updateAdsSettings':
+            return
+
         valid_ad = self._has_ad_entry(self.post_id)
         assert valid_ad, 'the specified post is not a valid ad'
 
-        action = self.action
         self.ad_state = self._get_ad_state()
 
         if self.ad_state:
@@ -508,15 +526,15 @@ class NativeAdOp:
     def _validate_ad_compliance(self):
         """Check if operation complies with community level ad settings"""
 
-        self.ads_context = self._get_ads_context()
+        #self.ads_context = self._get_ads_context()
         action = self.action
 
         if action != 'updateAdsSettings':  # bypass check when updating settings
-            if action not in ['adReject', 'adFund']:  # exempt from accepts_ad check
+            if action not in ['adReject', 'adFund', 'adWithdraw']:  # exempt from accepts_ad check
                 accepts_ads = self.ads_context['enabled']
                 assert accepts_ads, 'community does not accept ads'
 
-        if action == 'adSubmit' or action == 'adBid':
+        if action in ['adSubmit', 'adBid', 'adApprove']:
             self._check_bid()
 
         if action == 'adFund':
@@ -582,12 +600,17 @@ class NativeAdOp:
             )
             start_time = self.ad_state['start_time']
 
+        # check if time is in the future
+        now = datetime.utcnow()
+        _start_time = datetime.fromisoformat(start_time)
+        assert _start_time > now, 'provided start_time is not in the future'
+
         sql = """SELECT 1 FROM hive_ads_state
                     WHERE community_id = :community_id
                     AND status > 1
                     AND tsrange(start_time, start_time
                         + (time_units * interval '1 minute'), '[]')
-                    && tsrange(:start_time, :start_time
+                    && tsrange(timestamp :start_time, timestamp :start_time
                         + (:time_units * interval '1 minute'), '[]')"""
 
         found = bool(DB.query_one(
@@ -601,9 +624,18 @@ class NativeAdOp:
     def _check_bid(self):
         """Check if bid token, amount and time units respect community's preferences."""
 
-        op_bid_amount = self.params['bid_amount']
+        if 'bid_amount' in self.params:
+            op_bid_amount = self.params['bid_amount']
+        else:
+            assert self.ad_state['bid_amount'], 'missing bid_amount for ad'
+            op_bid_amount = self.ad_state['bid_amount']
         assert op_bid_amount > 0, 'bid amount must be greater than zero (0)'
-        op_time_units = self.params['time_units']
+
+        if 'time_units' in self.params:
+            op_time_units = self.params['time_units']
+        else:
+            assert self.ad_state['time_units'], 'missing time_units for ad'
+            op_time_units = self.ad_state['time_units']
         assert op_time_units > 0, 'time units must be greater than zero (0)'
 
         min_bid = self.ads_context['min_bid']
@@ -623,13 +655,13 @@ class NativeAdOp:
 
         if min_time_bid:
             assert op_time_units >= min_time_bid, (
-                'the community accepts a minimum of (%d) time units per bid'
-                % min_time_bid)
+                'the community accepts a minimum of (%d) time units per bid; you entered (%d)'
+                % (min_time_bid, op_time_units))
 
         if max_time_bid:
             assert op_time_units <= max_time_bid, (
-                'the community accepts a maximum of (%d) time units per bid'
-                % max_time_bid)
+                'the community accepts a maximum of (%d) time units per bid; you entered (%d)'
+                % (max_time_bid, op_time_units))
 
         if max_time_active:
             active_units = self._get_active_time_units()
@@ -682,11 +714,11 @@ class NativeAdOp:
         return result
 
     def _get_active_time_units(self):
-        """Get the total number of active time units for the transacting account.
+        """Get the total number of active time units for the transacting account
+            in the current community.
            (Only for ads with status of approved(2) and scheduled(3)."""
         sql = """SELECT SUM(time_units) FROM hive_ads_state
-                  WHERE post_id = :post_id
-                  AND account_id = :account_id
+                  WHERE account_id = :account_id
                   AND community_id = :community_id
                   AND status > 1"""  # TODO: investigate explicit expression (2,3)
         active_units = DB.query_one(
@@ -695,8 +727,7 @@ class NativeAdOp:
             account_id=self.account_id,
             community_id=self.community_id
         )
-        # TODO: check null return, replace with zero
-        return active_units
+        return active_units or 0
 
     def _get_ads_context(self):
         """Retrieve current community's native ad settings."""
@@ -713,7 +744,7 @@ class NativeAdOp:
                 'enabled': ads_prefs[0],
                 'token': ads_prefs[1],
                 'burn': ads_prefs[2],
-                'min_bid': ads_prefs[3],
+                'min_bid': float(ads_prefs[3]),
                 'min_time_bid': ads_prefs[4],
                 'max_time_bid': ads_prefs[5],
                 'max_time_active': ads_prefs[6],

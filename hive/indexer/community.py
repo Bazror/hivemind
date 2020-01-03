@@ -34,7 +34,10 @@ TYPE_COUNCIL = 3
 START_BLOCK = 37500000
 START_DATE = '2019-10-22T07:12:36' # effectively 2019-10-22 12:00:00
 
-NATIVE_AD_ACTIONS = ['adSubmit', 'adBid', 'adWithdraw', 'adApprove', 'adReject']
+NATIVE_AD_ACTIONS = [
+    'adSubmit', 'adBid', 'adWithdraw',
+    'adApprove', 'adReject', 'updateAdsSettings'
+]
 
 # https://en.wikipedia.org/wiki/ISO_639-1
 LANGS = ("ab,aa,af,ak,sq,am,ar,an,hy,as,av,ae,ay,az,bm,ba,eu,be,bn,bh,bi,"
