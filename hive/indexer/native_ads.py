@@ -78,7 +78,9 @@ class NativeAd:
                         for _status in ad_statuses:
                             if _status > Status.draft:
                                 return None  # ignore update if a non-draft status is found
-                        return cls._update(post)
+
+                        valid_ad = cls.has_ad_entry(post_id)
+                        if valid_ad: return cls._update(post)
 
         return None
 
@@ -125,6 +127,13 @@ class NativeAd:
             result = DB.query_col(sql, post_id=post_id)
 
         return result
+
+    @classmethod
+    def has_ad_entry(cls, pid):
+        """Checks if the post has an entry in `hive_ads` table."""
+        sql = """SELECT 1 FROM hive_ads
+                    WHERE post_id = :post_id"""
+        return bool(DB.query_one(sql, post_id=pid))
 
     @classmethod
     def read_ad_schema(cls, action, params):
@@ -454,7 +463,7 @@ class NativeAdOp:
         if action == 'updateAdsSettings':
             return
 
-        valid_ad = self._has_ad_entry(self.post_id)
+        valid_ad = NativeAd.has_ad_entry(self.post_id)
         assert valid_ad, 'the specified post is not a valid ad'
 
         self.ad_state = self._get_ad_state()
@@ -682,12 +691,6 @@ class NativeAdOp:
         sql = """SELECT 1 FROM hive_ads_settings
                   WHERE community_id = :community_id"""
         return bool(DB.query_one(sql, community_id=self.community_id))
-
-    def _has_ad_entry(self, pid):
-        """Checks if the post has an entry in `hive_ads` table."""
-        sql = """SELECT 1 FROM hive_ads
-                    WHERE post_id = :post_id"""
-        return bool(DB.query_one(sql, post_id=pid))
 
     def _get_ad_state(self):
         """Return the full state of the ad in the current community's context."""
