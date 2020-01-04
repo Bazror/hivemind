@@ -61,7 +61,7 @@ class NativeAd:
         if 'is_declined' in entry and entry['is_declined']:
             # check ad metadata
             ad_metadata = cls._check_ad_metadata(json.loads(entry['json']))
-            if ad_metadata is not None:
+            if ad_metadata:
                 # build ad post
                 post_id = entry['post_id']
                 post = [
@@ -495,8 +495,9 @@ class NativeAdOp:
                 else:
                     # proceed with normal validation
                     assert ad_status == Status.approved, (
-                        "you have funded an ad with status '%s'; consider "
-                        "contacting the community management to resolve this") % Status(ad_status).name
+                        "you have funded an ad with status '%s'; "
+                        "consider contacting the community management "
+                        "to resolve this") % Status(ad_status).name
 
 
             elif action == 'adApprove':
@@ -526,13 +527,13 @@ class NativeAdOp:
     def _validate_ad_compliance(self):
         """Check if operation complies with community level ad settings"""
 
-        #self.ads_context = self._get_ads_context()
         action = self.action
 
-        if action != 'updateAdsSettings':  # bypass check when updating settings
-            if action not in ['adReject', 'adFund', 'adWithdraw']:  # exempt from accepts_ad check
-                accepts_ads = self.ads_context['enabled']
-                assert accepts_ads, 'community does not accept ads'
+        if action == 'updateAdsSettings': return
+
+        if action not in ['adReject', 'adFund', 'adWithdraw']:  # exempt from accepts_ad check
+            accepts_ads = self.ads_context['enabled']
+            assert accepts_ads, 'community does not accept ads'
 
         if action in ['adSubmit', 'adBid', 'adApprove']:
             self._check_bid()
