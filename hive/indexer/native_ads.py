@@ -122,7 +122,7 @@ class NativeAd:
         else:
             sql = """SELECT status FROM hive_ads_state
                        WHERE post_id = :post_id"""
-            _result = DB.query_col(sql, post_id=post_id)
+            result = DB.query_col(sql, post_id=post_id)
 
         return result
 
@@ -218,40 +218,39 @@ class NativeAd:
     def check_ad_payment(cls, op, date, num):
         """Triggers an adFund operation for validated Native Ads transfers."""
         memo = op['memo']
-        payment = cls._valid_payment(memo)
 
-        if payment:
-            amount, token = parse_amount(op['amount'], bypass_nai_lookup=True)
-            params = {
-                'amount': amount,
-                'token': token,
-                'to_account': op['to'],
-                'community_name': payment['community_name']
-            }
-            from hive.indexer.accounts import Accounts
-            from hive.indexer.posts import Posts
+        try:
+            payment = cls._valid_payment(memo)
+            if payment:
+                amount, token = parse_amount(op['amount'], bypass_nai_lookup=True)
+                params = {
+                    'amount': amount,
+                    'token': token,
+                    'to_account': op['to'],
+                    'community_name': payment['community_name']
+                }
+                from hive.indexer.accounts import Accounts
+                from hive.indexer.posts import Posts
 
-            _post_id = Posts.get_id(op['from'], payment['permlink'])
-            assert _post_id, 'post not found: @%s/%s' % (op['from'], payment['permlink'])
+                _post_id = Posts.get_id(op['from'], payment['permlink'])
+                assert _post_id, 'post not found: @%s/%s' % (op['from'], payment['permlink'])
 
-            _account_id = Accounts.get_id(op['from'])
-            _community_id = payment['community_id']
+                _account_id = Accounts.get_id(op['from'])
+                _community_id = payment['community_id']
 
-            ad_op = NativeAdOp(
-                _community_id,
-                _post_id,
-                _account_id,
-                {'action': 'adFund',
-                 'params': params},
-                num
-            )
-            try:
+                ad_op = NativeAdOp(
+                    _community_id,
+                    _post_id,
+                    _account_id,
+                    {'action': 'adFund', 'params': params},
+                    num
+                )
                 ad_op.validate_op()
                 ad_op.process()
-            except AssertionError as e:
-                payload = str(e)
-                Notify('error', dst_id=_account_id,
-                       when=date, payload=payload).write()
+        except AssertionError as e:
+            payload = str(e)
+            Notify('error', dst_id=_account_id,
+                   when=date, payload=payload).write()
 
     @classmethod
     def _valid_payment(cls, memo):
@@ -401,17 +400,18 @@ class NativeAdOp:
                 DB.query(sql, **data)
 
             elif action == 'adFund':
-                set_values = 'SET status = %d, ' % Status.scheduled
+                set_values = 'SET status = %d' % Status.scheduled
 
                 if self.reduced_time_units:
-                    set_values += 'time_units = %d, ' % self.ad_state['time_units']
+                    set_values += ', time_units = %d' % self.ad_state['time_units']
 
                 if self.override_reject:
-                    set_values += "mod_notes = ''"
+                    set_values += ", mod_notes = ''"
 
                 sql = """UPDATE hive_ads_state
                             %s
                           %s""" %(set_values, sql_where)
+                DB.query(sql, **data)
 
             elif action == 'adApprove':
                 set_values = 'SET status = %d, ' % Status.approved
