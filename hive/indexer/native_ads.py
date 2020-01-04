@@ -593,7 +593,7 @@ class NativeAdOp:
         time_units = self.ad_state['time_units']
 
         if 'start_time' in self.params:
-            start_time = self.params['start_time']
+            start_time = datetime.fromisoformat(self.params['start_time'])
         else:
             assert self.ad_state['start_time'], (
                 "cannot approve an ad that doesn't have start_time specified"
@@ -602,8 +602,7 @@ class NativeAdOp:
 
         # check if time is in the future
         now = datetime.utcnow()
-        _start_time = datetime.fromisoformat(start_time)
-        assert _start_time > now, 'provided start_time is not in the future'
+        assert start_time > now, 'provided start_time is not in the future'
 
         sql = """SELECT 1 FROM hive_ads_state
                     WHERE community_id = :community_id
@@ -650,7 +649,7 @@ class NativeAdOp:
 
         if min_bid:
             assert op_bid_amount >= min_bid, (
-                'bid amount (%d) is less than community minimum (%d)'
+                'bid amount (%s) is less than community minimum (%s)'
                 % (op_bid_amount, min_bid))
 
         if min_time_bid:
@@ -673,7 +672,7 @@ class NativeAdOp:
     def _check_ad_timeout(self):
         if self.ad_state['status'] == Status.approved:
             now = datetime.utcnow()
-            start_time = datetime.fromisoformat(self.ad_state['start_time'])
+            start_time = self.ad_state['start_time']
             return now > start_time
         return False
 
