@@ -39,7 +39,7 @@ By making all ads decline payout and enforcing this rule in Hivemind itself, we 
 
 ### Ad creation
 
-Ads are created by making posts, that adhere to the requirements for ad posts (decline rewards, hidden). Posts will contain metadata that holds the ad's properties.
+Ads are created by making posts, that adhere to the requirements for ad posts (decline rewards, hidden). An ad post will also contain a `native_ads` key in `JSON metadata`, that holds the ad's properties.
 
 When submitting an ad to a community, duration (total time units), a starting bid amount and the token type are required. Start time is optional.
 
@@ -59,7 +59,7 @@ Building dedicated user interfaces for handling the bidding process will be poss
 
 The ad lifecycle is designed as an ordered flow. Different possibilities exist at each stage, with checks and balances coded in Hivemind to enforce the workflow.
 
-**0 - Draft**: ad was rejected [mod]
+**0 - Draft**: ad was withdrawn from community or rejected by a moderator [mod]
 
 **1 - Submitted**: a user has submitted it for review [user]
 
@@ -141,24 +141,6 @@ A valid ad can be submitted to a community by broadcasting an `adSubmit` operati
 - `time_units`: the period of time the ad will run for, in minutes
 - `bid_amount`: total amount offered for bid
 - `bid_token`: the token symbol
-
-### Universal rules for ads
-
-#### Decline payout
-
-For ads to be valid, they need to decline reward payouts, by setting:
-
-- `max_payout` to ZERO (0), or
-- `@null` account as 100% beneficiary (burning)
-
-#### Mandatory JSON metadata
-
-Native ads are valid when they contain a `native_ad` key in the post's JSON metadata field. Within the key, a dictionary of parameters will define the ad.
-
-- `type`: the type name of the ad, e.g. `native_post`
-- `properties`: contains the type-specific properties, e.g. `"devices": "mobile"`
-- `time_units`: the period of time the ad will run for (initial, can be updated through subsequent custom JSON ops)
-
 
 ### Ad Types
 

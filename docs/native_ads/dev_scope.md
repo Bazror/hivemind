@@ -27,6 +27,7 @@ Configurable parameters for communities:
 - `token` (token symbol)
 - `burn` (boolean)
 - `min_bid` (float)
+- `min_time_bid` (integer)
 - `max_time_bid` (integer)
 - `max_time_active` (integer)
 - `scheduled_ads_delay` (integer)
