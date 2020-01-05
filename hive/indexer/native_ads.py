@@ -33,6 +33,8 @@ REQUIRED_KEYS = {
     'updateAdsSettings': []
 }
 
+DEFAULT_MIN_SCHEDULED_DELAY = 720
+
 # TODO: pick start_block and start_time
 START_BLOCK = None
 START_TIME = None
@@ -200,6 +202,20 @@ class NativeAd:
                 assert isinstance(params['max_time_active'], int), (
                     'maximum active time units per account must be an integer'
                 )
+            if 'scheduled_delay' in params:
+                delay = params['scheduled_delay']
+                assert isinstance(delay, int), (
+                    'scheduled_delay must be an integer'
+                )
+                assert delay >= DEFAULT_MIN_SCHEDULED_DELAY, (
+                    'scheduled_delay must be at least %d minutes' % DEFAULT_MIN_SCHEDULED_DELAY
+                )
+            if 'scheduled_timeout' in params:
+                timeout = params['scheduled_timeout']
+                assert isinstance(timeout, int), (
+                    'scheduled_timeout must be an integer'
+                )
+
     @classmethod
     def check_allowed_keys(cls, action, provided_keys):
         """Checks for unsupported parameter keys in ad operations."""
