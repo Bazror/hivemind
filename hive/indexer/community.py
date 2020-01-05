@@ -491,7 +491,7 @@ class CommunityOp:
         if 'na_params' in schema:
             action = self.action
             self.na_params = read_key_dict(self.op, 'na_params')
-            NativeAd.read_ad_schema(action, self.na_params)
+            NativeAd.validate_ad_params(action, self.na_params)
 
 
     def _read_community(self):

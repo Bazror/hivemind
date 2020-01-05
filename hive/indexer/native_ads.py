@@ -136,8 +136,8 @@ class NativeAd:
         return bool(DB.query_one(sql, post_id=pid))
 
     @classmethod
-    def read_ad_schema(cls, action, params):
-        """Validates schema for given native ad operations."""
+    def validate_ad_params(cls, action, params):
+        """Validates schema and values of provided native ad params."""
         cls.check_required_keys(action, params.keys())
         cls.check_allowed_keys(action, params.keys())
 
