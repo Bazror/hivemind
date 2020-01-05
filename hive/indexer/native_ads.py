@@ -3,7 +3,7 @@
 #pylint: disable=too-many-lines
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import IntEnum
 from hive.db.adapter import Db
 
@@ -589,8 +589,9 @@ class NativeAdOp:
                 self.reduced_time_units = True
 
     def _validate_time_ranges(self):
-        """Validates that time ranges for adApprove ops exist and are valid
-            (i.e. no overlaps and no start_time values referencing the past)."""
+        """Validates that time ranges for adApprove ops exist
+            and are valid, i.e. no overlaps and no start_time values
+            before `now() + scheduled_delay`."""
 
         action = self.action
 
@@ -611,9 +612,12 @@ class NativeAdOp:
             )
             start_time = self.ad_state['start_time']
 
-        # check if time is in the future
-        now = datetime.utcnow()
-        assert start_time > now, 'provided start_time is not in the future'
+        # check if time is in the future and respects community delay setting
+        delay = self.ads_context['scheduled_delay']
+        earliest_time = datetime.utcnow() + timedelta(minutes=delay)
+        assert start_time > earliest_time, (
+            "start_time should be after %s (UTC) according to the community's "
+            "scheduled_delay of %d minutes" %(earliest_time, delay))
 
         sql = """SELECT 1 FROM hive_ads_state
                     WHERE community_id = :community_id
