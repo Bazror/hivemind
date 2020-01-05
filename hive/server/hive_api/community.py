@@ -346,12 +346,11 @@ async def get_user_ads(context, account, community=None):
                     s.start_time, s.status, s.mod_notes
                 FROM hive_ads a
                 JOIN hive_posts_cache p ON a.post_id = p.post_id
-          """
+                JOIN hive_ads_state s ON a.post_id = s.post_id"""
     if community:
-        sql += """JOIN hive_ads_state s ON a.post_id = s.post_id
-                                        AND s.community_id = :community_id
-               """
-    sql += """WHERE a.account_id = :account_id"""
+        sql += """ AND s.community_id = :community_id"""
+
+    sql += """ WHERE a.account_id = :account_id"""
 
     res = await db.query_all(sql, **params)
 
