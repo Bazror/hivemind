@@ -589,7 +589,8 @@ class NativeAdOp:
                 self.reduced_time_units = True
 
     def _validate_time_ranges(self):
-        """Checks adApprove ops for time slots that overlap with existing approved ads."""
+        """Validates that time ranges for adApprove ops exist and are valid
+            (i.e. no overlaps and no start_time values referencing the past)."""
 
         action = self.action
 
