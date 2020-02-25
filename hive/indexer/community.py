@@ -12,6 +12,7 @@ from hive.indexer.accounts import Accounts
 from hive.indexer.notify import Notify
 from hive.indexer.native_ads import NativeAd
 from hive.indexer.native_ads import NativeAdOp
+from hive.indexer.native_ads import START_BLOCK as NA_START_BLOCK
 from hive.db.db_state import DbState
 
 log = logging.getLogger(__name__)
@@ -340,6 +341,7 @@ class CommunityOp:
 
             # init native ad context and validate op
             if self.action in NATIVE_AD_ACTIONS:
+                if self.block_num < NA_START_BLOCK: return False
                 self.native_ad = NativeAdOp(
                     self.community_id,
                     self.post_id,
