@@ -35,9 +35,8 @@ REQUIRED_KEYS = {
 
 DEFAULT_MIN_SCHEDULED_DELAY = 720
 
-# TODO: pick start_block and start_time
-START_BLOCK = None
-START_TIME = None
+START_BLOCK = 41135232
+START_TIME = '2020-02-25T18:31:00'
 
 class Status(IntEnum):
     """Labels for ad status."""
@@ -59,6 +58,8 @@ class NativeAd:
         generate SQL statements for valid native ads
         and return."""
         entry = dict(values)
+        # check against start time
+        if entry['created_at'] < START_TIME: return None
         # check declined status
         if 'is_declined' in entry and entry['is_declined']:
             # check ad metadata
