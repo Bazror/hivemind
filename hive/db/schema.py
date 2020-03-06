@@ -326,6 +326,12 @@ def setup(db):
     # initialize schema
     build_metadata().create_all(db.engine())
 
+    # initialize native ads schema
+    na_sql = native_ads_schema()
+
+    for _query in na_sql:
+        db.query(_query)
+
     # tune auto vacuum/analyze
     reset_autovac(db)
 
@@ -364,3 +370,81 @@ def reset_autovac(db):
                                      autovacuum_analyze_scale_factor = 0,
                                      autovacuum_analyze_threshold = %s)"""
         db.query(sql % (table, n_vacuum, n_analyze))
+
+def native_ads_schema():
+    """Populate sql statements to create hive x tables."""
+    _sql = []
+
+    # create hive_x_state table
+    _sql.append(
+        """
+            CREATE TABLE hive_x_state (
+                x_version integer NOT NULL
+            );
+        """
+    )
+    # create hive_ads table
+    _sql.append(
+        """
+            CREATE TABLE hive_ads (
+                post_id integer PRIMARY KEY REFERENCES hive_posts (id),
+                account_id integer NOT NULL REFERENCES hive_accounts (id),
+                type varchar(16) NOT NULL,
+                properties text NOT NULL,
+                CONSTRAINT hive_ads_fk1
+                    FOREIGN KEY (post_id)
+                    REFERENCES hive_posts (id),
+                CONSTRAINT hive_ads_fk2
+                    FOREIGN KEY (account_id)
+                    REFERENCES hive_accounts (id)
+            );
+        """
+    )
+    # create hive_ads_state table
+    _sql.append(
+        """
+            CREATE TABLE hive_ads_state (
+                post_id integer NOT NULL REFERENCES hive_ads (post_id),
+                account_id integer NOT NULL REFERENCES hive_accounts(id),
+                community_id integer NOT NULL REFERENCES hive_communities (id),
+                time_units integer NOT NULL,
+                bid_amount numeric(10,3) NOT NULL,
+                bid_token char(11) NOT NULL,
+                start_time timestamp,
+                status smallint NOT NULL DEFAULT 0,
+                mod_notes varchar(500) DEFAULT '',
+                CONSTRAINT hive_ads_state_ux1 UNIQUE (post_id, community_id),
+                CONSTRAINT hive_ads_state_fk1
+                    FOREIGN KEY (post_id)
+                    REFERENCES hive_posts (id),
+                CONSTRAINT hive_ads_state_fk2
+                    FOREIGN KEY (account_id)
+                    REFERENCES hive_accounts (id),
+                CONSTRAINT hive_ads_state_fk3
+                    FOREIGN KEY (community_id)
+                    REFERENCES hive_communities (id)
+            );
+        """
+    )
+    # create hive_ads_settings table
+    _sql.append(
+        """
+            CREATE TABLE hive_ads_settings (
+                community_id integer PRIMARY KEY REFERENCES hive_communities (id),
+                enabled boolean NOT NULL DEFAULT false,
+                token char(11) NOT NULL DEFAULT '@@000000021',
+                burn boolean NOT NULL DEFAULT false,
+                min_bid numeric(10,3),
+                min_time_bid integer,
+                max_time_bid integer,
+                max_time_active integer,
+                scheduled_delay integer NOT NULL DEFAULT 1440,
+                scheduled_timeout integer,
+                CONSTRAINT hive_ads_settings_fk1
+                    FOREIGN KEY (community_id)
+                    REFERENCES hive_communities (id)
+            );
+        """
+    )
+
+    return _sql
