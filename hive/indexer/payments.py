@@ -9,6 +9,7 @@ from hive.utils.normalize import parse_amount
 from hive.indexer.posts import Posts
 from hive.indexer.accounts import Accounts
 from hive.indexer.cached_post import CachedPost
+from hive.indexer.native_ads import NativeAd
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class Payments:
     @classmethod
     def op_transfer(cls, op, tx_idx, num, date):
         """Process raw transfer op; apply balance if valid post promote."""
+        NativeAd.check_ad_payment(op, date, num)
         record = cls._validated(op, tx_idx, num, date)
         if not record:
             return

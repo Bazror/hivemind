@@ -3,6 +3,7 @@
 import logging
 import math
 import decimal
+import re
 from datetime import datetime
 from pytz import utc
 import ujson as json
@@ -25,7 +26,7 @@ def sbd_amount(value):
     """Returns a decimal amount, asserting units are SBD"""
     return parse_amount(value, 'SBD')
 
-def parse_amount(value, expected_unit=None):
+def parse_amount(value, expected_unit=None, bypass_nai_lookup=False):
     """Parse steemd-style amout/asset value, return (decimal, name)."""
     if isinstance(value, dict):
         value = [value['amount'], value['precision'], value['nai']]
@@ -37,9 +38,12 @@ def parse_amount(value, expected_unit=None):
     elif isinstance(value, list):
         satoshis, precision, nai = value
         dec_amount = decimal.Decimal(satoshis) / (10**precision)
-        assert nai in NAI_MAP, "unknown NAI %s; expected %s" % (
-            nai, expected_unit or '(any)')
-        unit = NAI_MAP[nai]
+        if not bypass_nai_lookup:
+            assert nai in NAI_MAP, "unknown NAI %s; expected %s" % (
+                nai, expected_unit or '(any)')
+            unit = NAI_MAP[nai]
+        else:
+            unit = nai
 
     else:
         raise Exception("invalid input amount %s" % repr(value))
@@ -62,6 +66,15 @@ def legacy_amount(value):
     prec = {'SBD': 3, 'STEEM': 3, 'VESTS': 6}[asset]
     tmpl = ("%%.%df %%s" % prec)
     return tmpl % (amt, asset)
+
+def is_valid_nai(token):
+    """Check if a given NAI is valid"""
+    # Future use when validating NAIs
+    result = re.match(r'@@\d{9}', token)
+    if result:
+        return True
+    else:
+        return False
 
 def block_num(block):
     """Given a block object, returns the block number."""
